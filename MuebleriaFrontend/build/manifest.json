@@ -1,0 +1,8 @@
+{
+  "short_name": "Los Alpes",
+  "name": "Muebles Los Alpes",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1a1714",
+  "background_color": "#f7f3ec"
+}

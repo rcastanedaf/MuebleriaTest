@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MuebleriaCore</RootNamespace>
+    <AssemblyName>MuebleriaCore</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Oracle -->
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.4.0" />
+    <!-- JWT -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    <!-- BCrypt -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <!-- Swagger -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+</Project>

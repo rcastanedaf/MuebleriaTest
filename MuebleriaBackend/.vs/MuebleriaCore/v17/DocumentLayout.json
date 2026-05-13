@@ -1,0 +1,507 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\downloads\\muebleriaproject\\muebleriabackend\\muebleriacore\\data\\oraclehelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\data\\oraclehelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_ORA_00904_CANTIDAD_DISPONIBLE.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\SOLUCION_ERROR_ORA_00904_CANTIDAD_DISPONIBLE.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_cantidad_disponible_stock.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_cantidad_disponible_stock.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\downloads\\muebleriaproject\\muebleriabackend\\muebleriacore\\controllers\\ventas\\ordenesventacontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\controllers\\ventas\\ordenesventacontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_ORA_02291.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\SOLUCION_ERROR_ORA_02291.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_orden_venta_fk.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_orden_venta_fk.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_subtotal_orden_venta.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_subtotal_orden_venta.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_column_names.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_column_names.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\add_subtotal_orden_venta_FINAL.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\add_subtotal_orden_venta_FINAL.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_SUBTOTAL.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\SOLUCION_ERROR_SUBTOTAL.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_quick.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_quick.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\783f3990\\~OrdenesVentaController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\46eaa310\\~OrdenesVentaController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\downloads\\muebleriaproject\\muebleriabackend\\muebleriacore\\controllers\\inventario\\articuloscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\controllers\\inventario\\articuloscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\FIX_COLUMN_NAMES_CODIGO.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\FIX_COLUMN_NAMES_CODIGO.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\FIX_INVALIDCASTEXCEPTION.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\FIX_INVALIDCASTEXCEPTION.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\CAMBIOS_REALIZADOS.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:CAMBIOS_REALIZADOS.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\downloads\\muebleriaproject\\muebleriabackend\\muebleriacore\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\RESUMEN_EJECUTIVO.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\RESUMEN_EJECUTIVO.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\GUIA_APLICACION.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\GUIA_APLICACION.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\CORRECCION_NOMBRES_ATRIBUTOS.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\CORRECCION_NOMBRES_ATRIBUTOS.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\3fdef4ef\\~ArticulosController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\validate_corrections.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\validate_corrections.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\downloads\\muebleriaproject\\muebleriabackend\\muebleriacore\\controllers\\allmodulescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\controllers\\allmodulescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\downloads\\muebleriaproject\\muebleriabackend\\muebleriacore\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_column_names.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_column_names.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\validate_corrections.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\validate_corrections.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\QUICK_START.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:QUICK_START.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_subtotal_orden_venta.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_subtotal_orden_venta.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_quick.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_quick.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\add_subtotal_orden_venta_FINAL.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\add_subtotal_orden_venta_FINAL.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\ANALISIS_DDL_Y_SOLUCION.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\ANALISIS_DDL_Y_SOLUCION.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_orden_venta_fk.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_orden_venta_fk.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_cantidad_disponible_stock.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Database\\fix_cantidad_disponible_stock.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|CodeFrame"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "SOLUCION_ERROR_ORA_00904_CANTIDAD_DISPONIBLE.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_ORA_00904_CANTIDAD_DISPONIBLE.md",
+              "RelativeDocumentMoniker": "Database\\SOLUCION_ERROR_ORA_00904_CANTIDAD_DISPONIBLE.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_ORA_00904_CANTIDAD_DISPONIBLE.md",
+              "RelativeToolTip": "Database\\SOLUCION_ERROR_ORA_00904_CANTIDAD_DISPONIBLE.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T03:34:00.176Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "fix_subtotal_orden_venta.sql ",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_subtotal_orden_venta.sql",
+              "RelativeDocumentMoniker": "Database\\fix_subtotal_orden_venta.sql",
+              "ToolTip": "fix_subtotal_orden_venta.sql ",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-05-13T03:19:59.122Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "OrdenesVentaController.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\Ventas\\OrdenesVentaController.cs",
+              "RelativeDocumentMoniker": "MuebleriaCore\\Controllers\\Ventas\\OrdenesVentaController.cs",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\Ventas\\OrdenesVentaController.cs",
+              "RelativeToolTip": "MuebleriaCore\\Controllers\\Ventas\\OrdenesVentaController.cs",
+              "ViewState": "AgIAAEcAAAAAAAAAAAAYwIkAAAA8AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T01:16:14.216Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "OracleHelper.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Data\\OracleHelper.cs",
+              "RelativeDocumentMoniker": "MuebleriaCore\\Data\\OracleHelper.cs",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Data\\OracleHelper.cs",
+              "RelativeToolTip": "MuebleriaCore\\Data\\OracleHelper.cs",
+              "ViewState": "AgIAAEoAAAAAAAAAAAAYwFMAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T01:10:12.834Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "fix_cantidad_disponible_stock.sql ",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_cantidad_disponible_stock.sql",
+              "RelativeDocumentMoniker": "Database\\fix_cantidad_disponible_stock.sql",
+              "ToolTip": "fix_cantidad_disponible_stock.sql ",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-05-13T03:33:17.034Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "fix_orden_venta_fk.sql ",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_orden_venta_fk.sql",
+              "RelativeDocumentMoniker": "Database\\fix_orden_venta_fk.sql",
+              "ToolTip": "fix_orden_venta_fk.sql ",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-05-13T03:31:09.191Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "SOLUCION_ERROR_ORA_02291.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_ORA_02291.md",
+              "RelativeDocumentMoniker": "Database\\SOLUCION_ERROR_ORA_02291.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_ORA_02291.md",
+              "RelativeToolTip": "Database\\SOLUCION_ERROR_ORA_02291.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T03:30:26.22Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "fix_column_names.sql ",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_column_names.sql",
+              "RelativeDocumentMoniker": "Database\\fix_column_names.sql",
+              "ToolTip": "fix_column_names.sql ",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-05-13T01:56:13.848Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "fix_quick.sql ",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\fix_quick.sql",
+              "RelativeDocumentMoniker": "Database\\fix_quick.sql",
+              "ToolTip": "fix_quick.sql ",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-05-13T03:20:55.175Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "README.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\README.md",
+              "RelativeDocumentMoniker": "Database\\README.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\README.md",
+              "RelativeToolTip": "Database\\README.md",
+              "ViewState": "AgIAAPwAAAAAAAAAAAAAAPwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T02:00:37.874Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "SOLUCION_ERROR_SUBTOTAL.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_SUBTOTAL.md",
+              "RelativeDocumentMoniker": "Database\\SOLUCION_ERROR_SUBTOTAL.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\SOLUCION_ERROR_SUBTOTAL.md",
+              "RelativeToolTip": "Database\\SOLUCION_ERROR_SUBTOTAL.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T03:20:45.783Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "~OrdenesVentaController.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\783f3990\\~OrdenesVentaController.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\Temp\\CopilotBaseline\\783f3990\\~OrdenesVentaController.cs",
+              "ToolTip": "C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\783f3990\\~OrdenesVentaController.cs",
+              "RelativeToolTip": "..\\..\\..\\AppData\\Local\\Temp\\CopilotBaseline\\783f3990\\~OrdenesVentaController.cs",
+              "ViewState": "AgIAAC8AAAAAAAAAAAAgwDkAAAA+AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T03:17:31.27Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "add_subtotal_orden_venta_FINAL.sql ",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\add_subtotal_orden_venta_FINAL.sql",
+              "RelativeDocumentMoniker": "Database\\add_subtotal_orden_venta_FINAL.sql",
+              "ToolTip": "add_subtotal_orden_venta_FINAL.sql ",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-05-13T03:22:46.003Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "ANALISIS_DDL_Y_SOLUCION.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\ANALISIS_DDL_Y_SOLUCION.md",
+              "RelativeDocumentMoniker": "Database\\ANALISIS_DDL_Y_SOLUCION.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\ANALISIS_DDL_Y_SOLUCION.md",
+              "RelativeToolTip": "Database\\ANALISIS_DDL_Y_SOLUCION.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAxwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T03:23:42.022Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "FIX_COLUMN_NAMES_CODIGO.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\FIX_COLUMN_NAMES_CODIGO.md",
+              "RelativeDocumentMoniker": "Database\\FIX_COLUMN_NAMES_CODIGO.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\FIX_COLUMN_NAMES_CODIGO.md",
+              "RelativeToolTip": "Database\\FIX_COLUMN_NAMES_CODIGO.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T03:16:24.606Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "ArticulosController.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\Inventario\\ArticulosController.cs",
+              "RelativeDocumentMoniker": "MuebleriaCore\\Controllers\\Inventario\\ArticulosController.cs",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\Inventario\\ArticulosController.cs",
+              "RelativeToolTip": "MuebleriaCore\\Controllers\\Inventario\\ArticulosController.cs",
+              "ViewState": "AgIAADwAAAAAAAAAAAAYwEgAAABQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T01:15:19.847Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "~OrdenesVentaController.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\46eaa310\\~OrdenesVentaController.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\Temp\\CopilotBaseline\\46eaa310\\~OrdenesVentaController.cs",
+              "ToolTip": "C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\46eaa310\\~OrdenesVentaController.cs",
+              "RelativeToolTip": "..\\..\\..\\AppData\\Local\\Temp\\CopilotBaseline\\46eaa310\\~OrdenesVentaController.cs",
+              "ViewState": "AgIAAH0AAAAAAAAAAAAgwIcAAAA8AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T01:21:09.802Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "FIX_INVALIDCASTEXCEPTION.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\FIX_INVALIDCASTEXCEPTION.md",
+              "RelativeDocumentMoniker": "Database\\FIX_INVALIDCASTEXCEPTION.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\FIX_INVALIDCASTEXCEPTION.md",
+              "RelativeToolTip": "Database\\FIX_INVALIDCASTEXCEPTION.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T03:07:12.95Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "CAMBIOS_REALIZADOS.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\CAMBIOS_REALIZADOS.md",
+              "RelativeDocumentMoniker": "CAMBIOS_REALIZADOS.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\CAMBIOS_REALIZADOS.md",
+              "RelativeToolTip": "CAMBIOS_REALIZADOS.md",
+              "ViewState": "AgIAACEAAAAAAAAAAAAiwCsAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T02:01:34.423Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\Auth\\AuthController.cs",
+              "RelativeDocumentMoniker": "MuebleriaCore\\Controllers\\Auth\\AuthController.cs",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\Auth\\AuthController.cs",
+              "RelativeToolTip": "MuebleriaCore\\Controllers\\Auth\\AuthController.cs",
+              "ViewState": "AgIAADcAAAAAAAAAAIAwwEcAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T01:16:27.059Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "RESUMEN_EJECUTIVO.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\RESUMEN_EJECUTIVO.md",
+              "RelativeDocumentMoniker": "Database\\RESUMEN_EJECUTIVO.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\RESUMEN_EJECUTIVO.md",
+              "RelativeToolTip": "Database\\RESUMEN_EJECUTIVO.md",
+              "ViewState": "AgIAACkAAAAAAAAAAAAAACkAAABMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T01:59:56.849Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "GUIA_APLICACION.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\GUIA_APLICACION.md",
+              "RelativeDocumentMoniker": "Database\\GUIA_APLICACION.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\GUIA_APLICACION.md",
+              "RelativeToolTip": "Database\\GUIA_APLICACION.md",
+              "ViewState": "AgIAAAkBAAAAAAAAAAAAAAkBAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T01:59:20.063Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "CORRECCION_NOMBRES_ATRIBUTOS.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\CORRECCION_NOMBRES_ATRIBUTOS.md",
+              "RelativeDocumentMoniker": "Database\\CORRECCION_NOMBRES_ATRIBUTOS.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\CORRECCION_NOMBRES_ATRIBUTOS.md",
+              "RelativeToolTip": "Database\\CORRECCION_NOMBRES_ATRIBUTOS.md",
+              "ViewState": "AgIAAH4AAAAAAAAAAAAAAH4AAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T01:58:03.913Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "~ArticulosController.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\3fdef4ef\\~ArticulosController.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\Temp\\CopilotBaseline\\3fdef4ef\\~ArticulosController.cs",
+              "ToolTip": "C:\\Users\\rcast\\AppData\\Local\\Temp\\CopilotBaseline\\3fdef4ef\\~ArticulosController.cs",
+              "RelativeToolTip": "..\\..\\..\\AppData\\Local\\Temp\\CopilotBaseline\\3fdef4ef\\~ArticulosController.cs",
+              "ViewState": "AgIAADsAAAAAAAAAAAAgwEUAAAA7AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T01:19:40.939Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "validate_corrections.sql ",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\Database\\validate_corrections.sql",
+              "RelativeDocumentMoniker": "Database\\validate_corrections.sql",
+              "ToolTip": "validate_corrections.sql ",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-05-13T01:58:43.054Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "AllModulesController.cs",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\AllModulesController.cs",
+              "RelativeDocumentMoniker": "MuebleriaCore\\Controllers\\AllModulesController.cs",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\Controllers\\AllModulesController.cs",
+              "RelativeToolTip": "MuebleriaCore\\Controllers\\AllModulesController.cs",
+              "ViewState": "AgIAAL8BAAAAAAAAAAApwM4BAACCAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T01:08:12.899Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "QUICK_START.md",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\QUICK_START.md",
+              "RelativeDocumentMoniker": "QUICK_START.md",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\QUICK_START.md",
+              "RelativeToolTip": "QUICK_START.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAANYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-05-13T02:02:32.588Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\appsettings.json",
+              "RelativeDocumentMoniker": "MuebleriaCore\\appsettings.json",
+              "ToolTip": "C:\\Users\\rcast\\Downloads\\MuebleriaProject\\MuebleriaBackend\\MuebleriaCore\\appsettings.json",
+              "RelativeToolTip": "MuebleriaCore\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-13T01:10:24.246Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
