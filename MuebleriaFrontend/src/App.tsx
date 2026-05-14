@@ -1,5 +1,6 @@
 // src/App.tsx
 import React, { useState, useMemo } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthStoreCtx } from "./store/authStore";
 import { CartStoreCtx } from "./store/cartStore";
 import { LangCtx, type Lang, useToast } from "./shared/hooks";
@@ -21,6 +22,7 @@ const CSS = `
   --radius:8px;--radiusLg:14px;
   --shadow:0 2px 16px rgba(26,23,20,.10);
   --shadowMd:0 4px 32px rgba(26,23,20,.14);
+  --nav-padding:0;
 }
 html,body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;min-height:100vh}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--sandDark);border-radius:2px}
@@ -31,15 +33,78 @@ button,input,select,textarea{font-family:inherit}
 .fadeUp{animation:fadeUp .4s cubic-bezier(.16,1,.3,1) forwards}
 .fadeIn{animation:fadeIn .3s ease forwards}
 @media(max-width:640px){html{font-size:14px}body{padding-bottom:64px}}
+.portal-nav{display:none}
+@media(max-width:768px){
+  .portal-nav{display:flex}
+  :root{--nav-padding:48px}
+}
 `;
 
-type AppMode = "portal" | "admin";
+// Navigation component using router hooks
+function PortalNav() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isAdmin = location.pathname === "/admin";
+  const isPortal = location.pathname === "/";
+
+  return (
+    <nav className="portal-nav" style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 48,
+      background: "rgba(26, 23, 20, 0.95)",
+      backdropFilter: "blur(8px)",
+      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+      zIndex: 9999,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+      padding: "0 16px",
+    }}>
+      <button
+        onClick={() => navigate("/")}
+        style={{
+          padding: "8px 16px",
+          borderRadius: "var(--radius)",
+          border: isPortal ? "2px solid var(--gold)" : "1px solid rgba(255,255,255,0.2)",
+          background: isPortal ? "var(--gold)" : "transparent",
+          color: isPortal ? "#fff" : "rgba(255,255,255,0.7)",
+          fontSize: 13,
+          fontWeight: isPortal ? 600 : 500,
+          cursor: "pointer",
+          transition: "all 0.2s",
+          fontFamily: "inherit",
+        }}
+      >
+        🛒 Portal
+      </button>
+      <button
+        onClick={() => navigate("/admin")}
+        style={{
+          padding: "8px 16px",
+          borderRadius: "var(--radius)",
+          border: isAdmin ? "2px solid var(--gold)" : "1px solid rgba(255,255,255,0.2)",
+          background: isAdmin ? "var(--gold)" : "transparent",
+          color: isAdmin ? "#fff" : "rgba(255,255,255,0.7)",
+          fontSize: 13,
+          fontWeight: isAdmin ? 600 : 500,
+          cursor: "pointer",
+          transition: "all 0.2s",
+          fontFamily: "inherit",
+        }}
+      >
+        ⚙️ Admin
+      </button>
+    </nav>
+  );
+}
 
 export default function App() {
   const [user,       setUser]       = useState<AuthUser | null>(null);
   const [cartItems,  setCartItems]  = useState<CartItem[]>([]);
   const [lang,       setLang]       = useState<Lang>("es");
-  const [appMode,    setAppMode]    = useState<AppMode>("portal");
   const { toasts, show: showToast } = useToast();
 
   const authValue  = useMemo(() => ({ user, setUser: (u: AuthUser) => setUser(u), clearUser: () => setUser(null) }), [user]);
@@ -47,33 +112,25 @@ export default function App() {
   const langValue  = useMemo(() => ({ lang, setLang }), [lang]);
 
   return (
-    <>
+    <Router>
+      <>
       <style>{CSS}</style>
-      <AuthStoreCtx.Provider value={authValue}>
-        <CartStoreCtx.Provider value={cartValue}>
-          <LangCtx.Provider value={langValue}>
-            {/* Toggle dev — retirar en producción */}
-            <div style={{ position:"fixed", top:8, right:8, zIndex:9999, display:"flex", gap:6 }}>
-              {(["portal","admin"] as AppMode[]).map(m => (
-                <button key={m} onClick={() => setAppMode(m)} style={{
-                  padding:"3px 10px", fontSize:10, fontWeight:600, borderRadius:4,
-                  cursor:"pointer", fontFamily:"inherit",
-                  background: appMode===m ? "var(--olive)" : "rgba(255,255,255,0.85)",
-                  color:      appMode===m ? "#fff"         : "var(--txtMid)",
-                  border:`1px solid ${appMode===m ? "var(--olive)" : "var(--sand)"}`,
-                }}>{m.toUpperCase()}</button>
-              ))}
-            </div>
+      <PortalNav />
+      <div style={{ paddingTop: "var(--nav-padding, 0)" }}>
+        <AuthStoreCtx.Provider value={authValue}>
+          <CartStoreCtx.Provider value={cartValue}>
+            <LangCtx.Provider value={langValue}>
+              <Routes>
+                <Route path="/" element={<PortalApp showToast={showToast} />} />
+                <Route path="/admin" element={<AdminApp showToast={showToast} />} />
+              </Routes>
 
-            {appMode === "portal"
-              ? <PortalApp showToast={showToast} />
-              : <AdminApp  showToast={showToast} />
-            }
-
-            <Toast toasts={toasts} />
-          </LangCtx.Provider>
-        </CartStoreCtx.Provider>
-      </AuthStoreCtx.Provider>
-    </>
+              <Toast toasts={toasts} />
+            </LangCtx.Provider>
+          </CartStoreCtx.Provider>
+        </AuthStoreCtx.Provider>
+      </div>
+      </>
+    </Router>
   );
 }

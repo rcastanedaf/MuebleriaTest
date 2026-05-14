@@ -1,6 +1,7 @@
 // src/pages/admin/AdminApp.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Badge, StatusBadge, Spinner, Modal, Input, Select, ConfirmDialog, Toast } from "../../shared/components";
+import { apiClient } from "../../core/api/apiClient";
 import { useCrud } from "../../features/admin/hooks/useCrud";
 import { useDisclosure } from "../../shared/hooks";
 import { formatQTZ, formatDate } from "../../shared/utils";
@@ -8,7 +9,8 @@ import {
   empleadosRepo, articulosRepo, proveedoresRepo, clientesRepo,
   ordenesVentaRepo, ordenesCompraRepo, vehiculosRepo, transportistasRepo,
   despachosRepo, ordenesProducRepo, nominaRepo, usuariosRepo,
-  bodegasRepo, sucursalesRepo, rolesRepo,
+  bodegasRepo, sucursalesRepo, rolesRepo, cargosRepo, listaPreciosRepo,
+  centrosTrabajoRepo, bomRepo,
 } from "../../features/admin/data/adminRepository";
 
 interface Props { showToast: (msg: string, type?: "success"|"error") => void; }
@@ -130,17 +132,33 @@ export function AdminApp({ showToast }: Props) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
+interface DashboardStats {
+  articulosActivos:  number;
+  ordenesPendientes: number;
+  clientesActivos:   number;
+  despachosEnRuta:   number;
+}
+
 function Dashboard() {
-  const stats = [
-    { icon:"🪑", label:"Artículos activos",   value:"—", color:"var(--olive)" },
-    { icon:"🛒", label:"Órdenes pendientes",  value:"—", color:"var(--gold)"  },
-    { icon:"👤", label:"Clientes activos",    value:"—", color:"#1e4fa0"      },
-    { icon:"🚛", label:"Despachos en ruta",   value:"—", color:"#2e6b4f"      },
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  useEffect(() => {
+    apiClient.get<DashboardStats>("/dashboard/stats")
+      .then(data => setStats(data))
+      .catch(() => {});
+  }, []);
+
+  const cards = [
+    { icon:"🪑", label:"Artículos activos",  value: stats ? String(stats.articulosActivos)  : "…", color:"var(--olive)" },
+    { icon:"🛒", label:"Órdenes pendientes", value: stats ? String(stats.ordenesPendientes) : "…", color:"var(--gold)"  },
+    { icon:"👤", label:"Clientes activos",   value: stats ? String(stats.clientesActivos)   : "…", color:"#1e4fa0"      },
+    { icon:"🚛", label:"Despachos en ruta",  value: stats ? String(stats.despachosEnRuta)   : "…", color:"#2e6b4f"      },
   ];
+
   return (
     <div className="fadeUp">
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(160px, 1fr))", gap:12, marginBottom:24 }}>
-        {stats.map(s => (
+        {cards.map(s => (
           <div key={s.label} style={{
             padding:"18px 16px", background:"var(--bg3)", border:"1px solid var(--sand)",
             borderRadius:"var(--radiusLg)", borderLeft:`3px solid ${s.color}`,
@@ -176,17 +194,117 @@ function CrudTable<T extends Record<string,any>>({
   const [formData,  setFormData]  = useState<Record<string,string>>({});
   const [deleteId,  setDeleteId]  = useState<number | null>(null);
 
+  // Options for select fields
+  const [sucursales, setSucursales] = useState<Array<{value: string, label: string}>>([]);
+  const [roles, setRoles] = useState<Array<{value: string, label: string}>>([]);
+  const [cargos, setCargos] = useState<Array<{value: string, label: string}>>([]);
+  const [proveedores, setProveedores] = useState<Array<{value: string, label: string}>>([]);
+  const [listasPrecios, setListasPrecios] = useState<Array<{value: string, label: string}>>([]);
+  const [empleados, setEmpleados] = useState<Array<{value: string, label: string}>>([]);
+  const [vehiculos, setVehiculos] = useState<Array<{value: string, label: string}>>([]);
+  const [transportistas, setTransportistas] = useState<Array<{value: string, label: string}>>([]);
+  const [centrosTrabajo, setCentrosTrabajo] = useState<Array<{value: string, label: string}>>([]);
+  const [listasMateriales, setListasMateriales] = useState<Array<{value: string, label: string}>>([]);
+
+  // Load options on mount
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        if (columns.includes('idSucursal') || columns.includes('nombreSucursal')) {
+          const s = await sucursalesRepo.getAll();
+          setSucursales(s.map(x => ({ value: String(x.idSucursal), label: x.nombreSucursal })));
+        }
+        if (columns.includes('idRol') || columns.includes('nombreRol')) {
+          const r = await rolesRepo.getAll();
+          setRoles(r.map(x => ({ value: String(x.idRol), label: x.nombreRol })));
+        }
+        if (columns.includes('idCargo') || columns.includes('nombreCargoRRHH')) {
+          const c = await cargosRepo.getAll();
+          setCargos(c.map(x => ({ value: String(x.idCargoRRHH), label: x.nombreCargoRRHH })));
+        }
+        if (columns.includes('idProveedor') || columns.includes('razonSocialProveedor')) {
+          const p = await proveedoresRepo.getAll();
+          setProveedores(p.map(x => ({ value: String(x.idProveedor), label: x.razonSocialProveedor })));
+        }
+        if (columns.includes('idListaPrecios') || columns.includes('nombreListaPrecios')) {
+          const lp = await listaPreciosRepo.getAll();
+          setListasPrecios(lp.map(x => ({ value: String(x.idListaPrecios), label: x.nombreListaPrecios })));
+        }
+        if (columns.includes('idEmpleado') || columns.includes('nombresEmpleado')) {
+          const e = await empleadosRepo.getAll();
+          setEmpleados(e.map(x => ({ value: String(x.idEmpleado), label: `${x.nombresEmpleado} ${x.apellidosEmpleado}` })));
+        }
+        if (columns.includes('idVehiculo') || columns.includes('placaVehiculo')) {
+          const v = await vehiculosRepo.getAll();
+          setVehiculos(v.map(x => ({ value: String(x.idVehiculo), label: x.placaVehiculo })));
+        }
+        if (columns.includes('idTransportista') || columns.includes('nombreTransportista')) {
+          const t = await transportistasRepo.getAll();
+          setTransportistas(t.map(x => ({ value: String(x.idTransportista), label: `${x.nombreTransportista} ${x.apellidosTransportista}` })));
+        }
+        if (columns.includes('idCentroTrabajo') || columns.includes('nombreCentroTrabajo')) {
+          const ct = await centrosTrabajoRepo.getAll();
+          setCentrosTrabajo(ct.map(x => ({ value: String(x.idCentroTrabajo), label: x.nombreCentroTrabajo })));
+        }
+        if (columns.includes('idListaMateriales') || columns.includes('nombreListaMateriales')) {
+          const lm = await bomRepo.getAll();
+          setListasMateriales(lm.map(x => ({ value: String(x.idListaMateriales), label: x.nombreListaMateriales })));
+        }
+      } catch (error) {
+        console.error('Error loading select options:', error);
+      }
+    };
+    loadOptions();
+  }, [columns]);
+
   const setField = (k: string, v: string) => setFormData(f => ({ ...f, [k]: v }));
 
+  // Convert form data to appropriate types before sending to backend
+  const convertFormData = (data: Record<string, string>): Partial<T> => {
+    const converted: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      // Convert numeric fields
+      if (key.toLowerCase().includes('precio') ||
+          key.toLowerCase().includes('total') ||
+          key.toLowerCase().includes('cantidad') ||
+          key.toLowerCase().includes('stock') ||
+          key.toLowerCase().includes('rango') ||
+          key.toLowerCase().includes('capacidad') ||
+          key.toLowerCase().includes('salario') ||
+          key.toLowerCase().includes('bonificacion') ||
+          key.toLowerCase().includes('descuento') ||
+          key.toLowerCase().includes('neto') ||
+          key.toLowerCase().includes('bruto') ||
+          key.toLowerCase().includes('horas')) {
+        converted[key] = value === '' ? null : Number(value);
+      }
+      // Convert boolean fields (if any)
+      else if (key.toLowerCase().includes('maneja') || key.toLowerCase().includes('estado')) {
+        if (key.toLowerCase().includes('estado')) {
+          converted[key] = value; // Keep as string for status fields
+        } else {
+          converted[key] = value === 'true' || value === '1';
+        }
+      }
+      // Keep as string for everything else
+      else {
+        converted[key] = value;
+      }
+    }
+    return converted as Partial<T>;
+  };
+
   const handleCreate = async () => {
-    const ok = await crud.create(formData as any);
+    const convertedData = convertFormData(formData);
+    const ok = await crud.create(convertedData);
     if (ok) { showToast(`${title} creado`); editModal.close(); setFormData({}); }
     else showToast(crud.error ?? "Error", "error");
   };
 
   const handleUpdate = async () => {
     if (!selected) return;
-    const ok = await crud.update(selected[pk], formData as any);
+    const convertedData = convertFormData(formData);
+    const ok = await crud.update(selected[pk], convertedData);
     if (ok) { showToast("Actualizado"); editModal.close(); }
     else showToast(crud.error ?? "Error", "error");
   };
@@ -209,6 +327,91 @@ function CrudTable<T extends Record<string,any>>({
 
   const colLabel = (key: string) =>
     key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase());
+
+  // Determine if field should use Select and get options
+  const getFieldConfig = (fieldName: string) => {
+    const statusOptions: Record<string, Array<{value: string, label: string}>> = {
+      estadoNomina: [
+        { value: "A", label: "Activo" },
+        { value: "I", label: "Inactivo" },
+        { value: "C", label: "Cancelado" },
+      ],
+      estadoOrdenVenta: [
+        { value: "P", label: "Pendiente" },
+        { value: "A", label: "Aprobada" },
+        { value: "D", label: "Despachada" },
+        { value: "F", label: "Finalizada" },
+        { value: "C", label: "Cancelada" },
+      ],
+      estadoOrdenCompra: [
+        { value: "P", label: "Pendiente" },
+        { value: "A", label: "Aprobada" },
+        { value: "R", label: "Rechazada" },
+        { value: "C", label: "Cancelada" },
+      ],
+      estadoOrdenDespachado: [
+        { value: "P", label: "Pendiente" },
+        { value: "D", label: "Despachado" },
+        { value: "E", label: "En ruta" },
+        { value: "C", label: "Cancelado" },
+      ],
+      estadoSalidaMercaderia: [
+        { value: "P", label: "Pendiente" },
+        { value: "A", label: "Aprobado" },
+        { value: "C", label: "Cancelado" },
+      ],
+      estadoVacacion: [
+        { value: "P", label: "Pendiente" },
+        { value: "A", label: "Aprobada" },
+        { value: "I", label: "Inactiva" },
+      ],
+      estadoOrdenProduccion: [
+        { value: "P", label: "Pendiente" },
+        { value: "E", label: "En proceso" },
+        { value: "C", label: "Completado" },
+        { value: "R", label: "Rechazado" },
+      ],
+      estadoSolicitud: [
+        { value: "P", label: "Pendiente" },
+        { value: "A", label: "Aprobada" },
+        { value: "R", label: "Rechazada" },
+        { value: "C", label: "Cancelada" },
+      ],
+      defaultEstado: [
+        { value: "A", label: "Activo" },
+        { value: "I", label: "Inactivo" },
+      ],
+    };
+
+    const selectConfigs: Record<string, Array<{value: string, label: string}>> = {
+      idSucursal: sucursales,
+      nombreSucursal: sucursales,
+      idRol: roles,
+      nombreRol: roles,
+      idCargo: cargos,
+      nombreCargoRRHH: cargos,
+      idProveedor: proveedores,
+      razonSocialProveedor: proveedores,
+      idListaPrecios: listasPrecios,
+      nombreListaPrecios: listasPrecios,
+      idEmpleado: empleados,
+      nombresEmpleado: empleados,
+      idVehiculo: vehiculos,
+      placaVehiculo: vehiculos,
+      idTransportista: transportistas,
+      nombreTransportista: transportistas,
+      idCentroTrabajo: centrosTrabajo,
+      nombreCentroTrabajo: centrosTrabajo,
+      idListaMateriales: listasMateriales,
+      nombreListaMateriales: listasMateriales,
+    };
+
+    if (selectConfigs[fieldName]) return selectConfigs[fieldName];
+    if (fieldName.toLowerCase().includes("estado")) {
+      return statusOptions[fieldName] ?? statusOptions.defaultEstado;
+    }
+    return null;
+  };
 
   const cellValue = (row: T, col: string) => {
     const v = row[col];
@@ -306,11 +509,41 @@ function CrudTable<T extends Record<string,any>>({
       <Modal isOpen={editModal.isOpen} onClose={editModal.close}
         title={selected ? `Editar ${title}` : `Nuevo ${title}`} width={500}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-          {columns.filter(c => !c.toLowerCase().includes("nombre") || !selected).map(c => (
-            <div key={c} style={{ gridColumn: c.length > 20 ? "1/-1" : undefined }}>
-              <Input label={colLabel(c)} value={formData[c] ?? ""} onChange={v => setField(c, v)} />
-            </div>
-          ))}
+          {columns.filter(c => !c.toLowerCase().includes("nombre") || !selected).map(c => {
+            const options = getFieldConfig(c);
+            const isNumeric = c.toLowerCase().includes('precio') ||
+                             c.toLowerCase().includes('total') ||
+                             c.toLowerCase().includes('cantidad') ||
+                             c.toLowerCase().includes('stock') ||
+                             c.toLowerCase().includes('rango') ||
+                             c.toLowerCase().includes('capacidad') ||
+                             c.toLowerCase().includes('salario') ||
+                             c.toLowerCase().includes('bonificacion') ||
+                             c.toLowerCase().includes('descuento') ||
+                             c.toLowerCase().includes('neto') ||
+                             c.toLowerCase().includes('bruto') ||
+                             c.toLowerCase().includes('horas');
+            return (
+              <div key={c} style={{ gridColumn: c.length > 20 ? "1/-1" : undefined }}>
+                {options ? (
+                  <Select
+                    label={colLabel(c)}
+                    value={formData[c] ?? ""}
+                    onChange={v => setField(c, v)}
+                    options={options}
+                    placeholder={`Seleccionar ${colLabel(c).toLowerCase()}`}
+                  />
+                ) : (
+                  <Input
+                    label={colLabel(c)}
+                    value={formData[c] ?? ""}
+                    onChange={v => setField(c, v)}
+                    type={isNumeric ? "number" : "text"}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
         <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:20 }}>
           <Button variant="ghost" onClick={editModal.close}>Cancelar</Button>

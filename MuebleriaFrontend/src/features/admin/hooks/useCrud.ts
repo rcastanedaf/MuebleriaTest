@@ -22,21 +22,25 @@ export function useCrud<T extends Record<string,any>>(repo: AdminRepo<T>, pkFiel
 
   const create = useCallback(async (data: Partial<T>): Promise<boolean> => {
     setSaving(true); setError(null);
-    try { const r = await repo.create(data); setRows(prev => [...prev, r]); return true; }
+    try {
+      await repo.create(data);
+      await load();
+      return true;
+    }
     catch(e: any) { setError(e.message ?? "Error al crear"); return false; }
     finally { setSaving(false); }
-  }, [repo]);
+  }, [repo, load]);
 
   const update = useCallback(async (id: number, data: Partial<T>): Promise<boolean> => {
     setSaving(true); setError(null);
     try {
       await repo.update(id, data);
-      setRows(prev => prev.map(r => r[pkField] === id ? { ...r, ...data } : r));
+      await load();
       return true;
     }
     catch(e: any) { setError(e.message ?? "Error al actualizar"); return false; }
     finally { setSaving(false); }
-  }, [repo, pkField]);
+  }, [repo, pkField, load]);
 
   const remove = useCallback(async (id: number): Promise<boolean> => {
     setError(null);

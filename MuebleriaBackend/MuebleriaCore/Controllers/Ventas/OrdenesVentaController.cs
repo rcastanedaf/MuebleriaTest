@@ -176,19 +176,25 @@ public class OrdenesVentaController : BaseController
 
     // ── PUT /api/ordenes-venta/{id} ───────────────────────────
     [HttpPut("{id:long}")]
-    public IActionResult UpdateEstado(long id, [FromBody] EstadoDto dto)
+    public IActionResult Update(long id, [FromBody] OrdenVentaUpdateDto dto)
     {
         _db.ExecuteNonQuery(
             @"UPDATE ORDEN_VENTA SET
-                ESTADO_ORDEN_VENTA  = :p_estado,
-                ID_USUARIO_MODIFICA = :p_umod
+                SUBTOTAL_ORDEN_VENTA = NVL(:p_sub, SUBTOTAL_ORDEN_VENTA),
+                IMPUESTO_ORDEN_VENTA = NVL(:p_imp, IMPUESTO_ORDEN_VENTA),
+                TOTAL_ORDEN_VENTA    = NVL(:p_tot, TOTAL_ORDEN_VENTA),
+                ESTADO_ORDEN_VENTA   = NVL(:p_est, ESTADO_ORDEN_VENTA),
+                ID_USUARIO_MODIFICA  = :p_umod
               WHERE ID_ORDEN_VENTA = :p_id",
             [
-                OracleHelper.P("p_estado",  dto.Estado),
+                OracleHelper.PDec("p_sub",  dto.Subtotal),
+                OracleHelper.PDec("p_imp",  dto.Impuesto),
+                OracleHelper.PDec("p_tot",  dto.Total),
+                OracleHelper.P("p_est",     dto.Estado),
                 OracleHelper.PInt("p_umod", CurrentUserId),
                 OracleHelper.PInt("p_id",   id),
             ]);
-        return Ok(new { message = "Estado actualizado." });
+        return Ok(new { message = "Orden de venta actualizada." });
     }
 }
 
@@ -199,3 +205,4 @@ public record OrdenVentaDto(
 
 public record ItemVentaDto(long ArticuloId, decimal Cantidad, decimal PrecioUnitario);
 public record EstadoDto(string Estado);
+public record OrdenVentaUpdateDto(decimal? Subtotal, decimal? Impuesto, decimal? Total, string? Estado);

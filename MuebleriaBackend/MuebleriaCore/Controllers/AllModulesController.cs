@@ -103,8 +103,8 @@ public class RolesController(OracleHelper db) : BaseController(db)
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] RolDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ROLES SET NOMBRE_ROL=NVL(:n,NOMBRE_ROL),DESCRIPCION_ROL=NVL(:d,DESCRIPCION_ROL) WHERE ID_ROL=:p",
-            [OracleHelper.P("n",d.NombreRol),OracleHelper.P("d",d.DescripcionRol),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("UPDATE ROLES SET NOMBRE_ROL=NVL(:n,NOMBRE_ROL),DESCRIPCION_ROL=NVL(:d,DESCRIPCION_ROL),RANGO_ROL=NVL(:r,RANGO_ROL) WHERE ID_ROL=:p",
+            [OracleHelper.P("n",d.NombreRol),OracleHelper.P("d",d.DescripcionRol),OracleHelper.PInt("r",d.RangoRol),OracleHelper.PInt("p",id)]);
         return Ok();
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
@@ -332,8 +332,8 @@ public class CargosRRHHController(OracleHelper db) : BaseController(db)
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] CargoDto d)
     {
-        _db.ExecuteNonQuery("UPDATE CARGO_RRHH SET NOMBRE_CARGO_RRHH=NVL(:n,NOMBRE_CARGO_RRHH),SALARIO_MIN_CARGO_RRHH=NVL(:smin,SALARIO_MIN_CARGO_RRHH),SALARIO_MAX_CARGO_RRHH=NVL(:smax,SALARIO_MAX_CARGO_RRHH) WHERE ID_CARGO_RRHH=:p",
-            [OracleHelper.P("n",d.NombreCargoRRHH),OracleHelper.PDec("smin",d.SalarioMinCargoRRHH),OracleHelper.PDec("smax",d.SalarioMaxCargoRRHH),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("UPDATE CARGO_RRHH SET NOMBRE_CARGO_RRHH=NVL(:n,NOMBRE_CARGO_RRHH),NIVEL_CARGO_RRHH=NVL(:niv,NIVEL_CARGO_RRHH),SALARIO_MIN_CARGO_RRHH=NVL(:smin,SALARIO_MIN_CARGO_RRHH),SALARIO_MAX_CARGO_RRHH=NVL(:smax,SALARIO_MAX_CARGO_RRHH) WHERE ID_CARGO_RRHH=:p",
+            [OracleHelper.P("n",d.NombreCargoRRHH),OracleHelper.P("niv",d.NivelCargoRRHH),OracleHelper.PDec("smin",d.SalarioMinCargoRRHH),OracleHelper.PDec("smax",d.SalarioMaxCargoRRHH),OracleHelper.PInt("p",id)]);return Ok();
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
@@ -384,8 +384,8 @@ public class NominaController(OracleHelper db) : BaseController(db)
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] NominaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE NOMINA SET ESTADO_NOMINA=NVL(:est,ESTADO_NOMINA),TOTAL_NETO_NOMINA=NVL(:tn,TOTAL_NETO_NOMINA) WHERE ID_NOMINA=:p",
-            [OracleHelper.P("est",d.EstadoNomina),OracleHelper.PDec("tn",d.TotalNetoNomina),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("UPDATE NOMINA SET TOTAL_BRUTO_NOMINA=NVL(:tb,TOTAL_BRUTO_NOMINA),TOTAL_DESCUENTOS_NOMINA=NVL(:td,TOTAL_DESCUENTOS_NOMINA),TOTAL_NETO_NOMINA=NVL(:tn,TOTAL_NETO_NOMINA),ESTADO_NOMINA=NVL(:est,ESTADO_NOMINA) WHERE ID_NOMINA=:p",
+            [OracleHelper.PDec("tb",d.TotalBrutoNomina),OracleHelper.PDec("td",d.TotalDescuentosNomina),OracleHelper.PDec("tn",d.TotalNetoNomina),OracleHelper.P("est",d.EstadoNomina),OracleHelper.PInt("p",id)]);return Ok();
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
@@ -492,8 +492,8 @@ public class ProveedoresController(OracleHelper db) : BaseController(db)
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] ProveedorDto d)
     {
-        _db.ExecuteNonQuery("UPDATE PROVEEDORES SET RAZON_SOCIAL_PROVEEDOR=NVL(:rs,RAZON_SOCIAL_PROVEEDOR),ESTADO_PROVEEDOR=NVL(:est,ESTADO_PROVEEDOR) WHERE ID_PROVEEDOR=:p",
-            [OracleHelper.P("rs",d.RazonSocialProveedor),OracleHelper.P("est",d.EstadoProveedor),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("UPDATE PROVEEDORES SET RAZON_SOCIAL_PROVEEDOR=NVL(:rs,RAZON_SOCIAL_PROVEEDOR),PLAZO_PAGO_PROVEEDOR=NVL(:pp,PLAZO_PAGO_PROVEEDOR),ESTADO_PROVEEDOR=NVL(:est,ESTADO_PROVEEDOR) WHERE ID_PROVEEDOR=:p",
+            [OracleHelper.P("rs",d.RazonSocialProveedor),OracleHelper.PInt("pp",d.PlazoPagoProveedor),OracleHelper.P("est",d.EstadoProveedor),OracleHelper.PInt("p",id)]);return Ok();
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
@@ -519,8 +519,8 @@ public class OrdenesCompraController(OracleHelper db) : BaseController(db)
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] OrdenCompraDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_COMPRA SET ESTADO_ORDEN_COMPRA=NVL(:est,ESTADO_ORDEN_COMPRA),ID_USUARIO_MODIFICA=:umod WHERE ID_ORDEN_COMPRA=:p",
-            [OracleHelper.P("est",d.EstadoOrdenCompra),OracleHelper.PInt("umod",CurrentUserId),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("UPDATE ORDEN_COMPRA SET SUBTOTAL_ORDEN_COMPRA=NVL(:sub,SUBTOTAL_ORDEN_COMPRA),IMPUESTO_ORDEN_COMPRA=NVL(:imp,IMPUESTO_ORDEN_COMPRA),TOTAL_ORDEN_COMPRA=NVL(:tot,TOTAL_ORDEN_COMPRA),ESTADO_ORDEN_COMPRA=NVL(:est,ESTADO_ORDEN_COMPRA),ID_USUARIO_MODIFICA=:umod WHERE ID_ORDEN_COMPRA=:p",
+            [OracleHelper.PDec("sub",d.SubtotalOrdenCompra),OracleHelper.PDec("imp",d.ImpuestoOrdenCompra),OracleHelper.PDec("tot",d.TotalOrdenCompra),OracleHelper.P("est",d.EstadoOrdenCompra),OracleHelper.PInt("umod",CurrentUserId),OracleHelper.PInt("p",id)]);return Ok();
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
@@ -555,8 +555,8 @@ public class ClientesController(OracleHelper db) : BaseController(db)
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] ClienteDto d)
     {
-        _db.ExecuteNonQuery("UPDATE CLIENTE SET RAZON_SOCIAL_CLIENTE=NVL(:rs,RAZON_SOCIAL_CLIENTE),ESTADO_CLIENTE=NVL(:est,ESTADO_CLIENTE) WHERE ID_CLIENTE=:p",
-            [OracleHelper.P("rs",d.RazonSocialCliente),OracleHelper.P("est",d.EstadoCliente),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("UPDATE CLIENTE SET RAZON_SOCIAL_CLIENTE=NVL(:rs,RAZON_SOCIAL_CLIENTE),LIMITE_CREDITO_CLIENTE=NVL(:lim,LIMITE_CREDITO_CLIENTE),ESTADO_CLIENTE=NVL(:est,ESTADO_CLIENTE) WHERE ID_CLIENTE=:p",
+            [OracleHelper.P("rs",d.RazonSocialCliente),OracleHelper.PDec("lim",d.LimiteCreditoCliente),OracleHelper.P("est",d.EstadoCliente),OracleHelper.PInt("p",id)]);return Ok();
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
@@ -655,8 +655,8 @@ public class OrdenesProduccionController(OracleHelper db) : BaseController(db)
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] OrdenProduccionDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_PRODUCCION SET ESTADO_ORDEN_PRODUCCION=NVL(:est,ESTADO_ORDEN_PRODUCCION),CANTIDAD_PRODUCIDA_ORIDEN_PRODUCCION=NVL(:cprod,CANTIDAD_PRODUCIDA_ORIDEN_PRODUCCION),ID_USUARIO_MODIFICA=:umod WHERE ID_ORDEN_PRODUCCION=:p",
-            [OracleHelper.P("est",d.EstadoOrdenProduccion),OracleHelper.PDec("cprod",d.CantidadProducida),OracleHelper.PInt("umod",CurrentUserId),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("UPDATE ORDEN_PRODUCCION SET CANTIDAD_PLANIFICADA_ORDEN_PRODUCCION=NVL(:cplan,CANTIDAD_PLANIFICADA_ORDEN_PRODUCCION),CANTIDAD_PRODUCIDA_ORDEN_PRODUCCION=NVL(:cprod,CANTIDAD_PRODUCIDA_ORDEN_PRODUCCION),ESTADO_ORDEN_PRODUCCION=NVL(:est,ESTADO_ORDEN_PRODUCCION),ID_USUARIO_MODIFICA=:umod WHERE ID_ORDEN_PRODUCCION=:p",
+            [OracleHelper.PDec("cplan",d.CantidadPlanificadaOrdenProduccion),OracleHelper.PDec("cprod",d.CantidadProducida),OracleHelper.P("est",d.EstadoOrdenProduccion),OracleHelper.PInt("umod",CurrentUserId),OracleHelper.PInt("p",id)]);return Ok();
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
@@ -781,3 +781,25 @@ public class EntregasController(OracleHelper db) : BaseController(db)
     }
 }
 public record EntregaDto(string? ObservacionesEntrega, string? EstadoEntrega, long? IdOrdenDespacho);
+
+
+// ── Dashboard ─────────────────────────────────────────────────
+
+[Route("api/dashboard")]
+public class DashboardController(OracleHelper db) : BaseController(db)
+{
+    [HttpGet("stats")]
+    public IActionResult GetStats()
+    {
+        var sql = @"SELECT
+            (SELECT COUNT(*) FROM ARTICULO       WHERE ESTADO_ARTICULO        = 'A') AS ARTICULOS_ACTIVOS,
+            (SELECT COUNT(*) FROM ORDEN_VENTA    WHERE ESTADO_ORDEN_VENTA     = 'P') AS ORDENES_PENDIENTES,
+            (SELECT COUNT(*) FROM CLIENTE        WHERE ESTADO_CLIENTE         = 'A') AS CLIENTES_ACTIVOS,
+            (SELECT COUNT(*) FROM ORDEN_DESPACHADO WHERE ESTADO_ORDEN_DESPACHADO = 'E') AS DESPACHOS_EN_RUTA
+        FROM DUAL";
+
+        var dt = _db.ExecuteReader(sql);
+        var row = OracleHelper.ToList(dt)[0];
+        return Ok(row);
+    }
+}

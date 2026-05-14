@@ -1,5 +1,5 @@
 // src/pages/portal/PortalApp.tsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLang } from "../../shared/hooks";
 import { Button, Badge, Spinner, Modal, Input, Toast } from "../../shared/components";
 import { useCatalog } from "../../features/catalog/hooks/useCatalog";
@@ -64,7 +64,7 @@ export function PortalApp({ showToast }: Props) {
   const [orderDetailLoading, setOrderDetailLoading] = useState(false);
   const [orderDetailError, setOrderDetailError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadOrders = useCallback(async () => {
     if (!user) {
       setOrders([]);
       setOrdersError(null);
@@ -73,11 +73,22 @@ export function PortalApp({ showToast }: Props) {
 
     setOrdersLoading(true);
     setOrdersError(null);
-    checkoutRepository.getMyOrders(user.id)
-      .then(setOrders)
-      .catch((err: any) => setOrdersError(err?.message ?? "Error al cargar pedidos"))
-      .finally(() => setOrdersLoading(false));
+    try {
+      const data = await checkoutRepository.getMyOrders(user.id);
+      setOrders(data);
+    } catch (err: any) {
+      setOrdersError(err?.message ?? "Error al cargar pedidos");
+    } finally {
+      setOrdersLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
+
+  const handleOrderRefresh = async () => {
+    await loadOrders();
+    setView("account");
+  };
 
   const loadOrderDetail = async (orderId: number) => {
     setOrderDetailLoading(true);
@@ -340,7 +351,7 @@ export function PortalApp({ showToast }: Props) {
       )}
 
       {/* ── CHECKOUT ─────────────────────────────────────────── */}
-      {view === "checkout" && <CheckoutView showToast={showToast} onDone={() => setView("account")} lang={lang} />}
+      {view === "checkout" && <CheckoutView showToast={showToast} onDone={handleOrderRefresh} lang={lang} />}
 
       {/* ── ACCOUNT ──────────────────────────────────────────── */}
       {view === "account" && (

@@ -114,10 +114,14 @@ export const Modal: React.FC<{
       style={{
         position: "fixed", inset: 0, zIndex: 1000, background: "rgba(26,23,20,0.55)",
         backdropFilter: "blur(4px)", display: "flex", alignItems: "center",
-        justifyContent: "center", padding: 16,
+        justifyContent: "center", padding: 16, overflowY: "auto", minHeight: "100vh",
       }}
     >
       <div style={{
+        position: "relative",
+        top: 0,
+        left: 0,
+        transform: "none",
         background: "var(--bg3)", border: "1px solid var(--sand)", borderRadius: "var(--radiusLg)",
         width: "100%", maxWidth: width, maxHeight: "90vh", display: "flex", flexDirection: "column",
         boxShadow: "0 8px 40px rgba(26,23,20,0.22)",
