@@ -1,10 +1,12 @@
 // src/pages/admin/AdminApp.tsx
 import React, { useState, useEffect } from "react";
 import { Button, Badge, StatusBadge, Spinner, Modal, Input, Select, ConfirmDialog, Toast } from "../../shared/components";
+import { DashboardWidget, DashboardTableWidget, SimpleLineChart } from "../../shared/components/DashboardWidget";
 import { apiClient } from "../../core/api/apiClient";
 import { useCrud } from "../../features/admin/hooks/useCrud";
 import { useDisclosure } from "../../shared/hooks";
 import { formatQTZ, formatDate } from "../../shared/utils";
+import { dashboardRepository } from "../../features/admin/data/dashboardRepository";
 import {
   empleadosRepo, articulosRepo, proveedoresRepo, clientesRepo,
   ordenesVentaRepo, ordenesCompraRepo, vehiculosRepo, transportistasRepo,
@@ -132,48 +134,396 @@ export function AdminApp({ showToast }: Props) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-interface DashboardStats {
-  articulosActivos:  number;
-  ordenesPendientes: number;
-  clientesActivos:   number;
-  despachosEnRuta:   number;
-}
-
 function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  // Estadísticas principales
+  const [stats, setStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
+  // Ventas
+  const [salesSummary, setSalesSummary] = useState<any>(null);
+  const [salesSummaryLoading, setSalesSummaryLoading] = useState(true);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [topProductsLoading, setTopProductsLoading] = useState(true);
+  const [salesByMonth, setSalesByMonth] = useState<any[]>([]);
+  const [salesByMonthLoading, setSalesByMonthLoading] = useState(true);
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [recentSalesLoading, setRecentSalesLoading] = useState(true);
+
+  // Administración
+  const [lowStock, setLowStock] = useState<any[]>([]);
+  const [lowStockLoading, setLowStockLoading] = useState(true);
+  const [pendingOrders, setPendingOrders] = useState<any>(null);
+  const [pendingOrdersLoading, setPendingOrdersLoading] = useState(true);
+  const [newClients, setNewClients] = useState<any>(null);
+  const [newClientsLoading, setNewClientsLoading] = useState(true);
+  const [dispatchStatus, setDispatchStatus] = useState<any>(null);
+  const [dispatchStatusLoading, setDispatchStatusLoading] = useState(true);
+  const [inventoryByCategory, setInventoryByCategory] = useState<any[]>([]);
+  const [inventoryByCategoryLoading, setInventoryByCategoryLoading] = useState(true);
+
+  // Errores
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Cargar datos del dashboard
   useEffect(() => {
-    apiClient.get<DashboardStats>("/dashboard/stats")
-      .then(data => setStats(data))
-      .catch(() => {});
-  }, []);
+    const loadDashboardData = async () => {
+      try {
+        setStatsLoading(true);
+        setSalesSummaryLoading(true);
+        setTopProductsLoading(true);
+        setSalesByMonthLoading(true);
+        setRecentSalesLoading(true);
+        setLowStockLoading(true);
+        setInventoryByCategoryLoading(true);
+        setPendingOrdersLoading(true);
+        setNewClientsLoading(true);
+        setDispatchStatusLoading(true);
+        setErrors({});
 
-  const cards = [
-    { icon:"🪑", label:"Artículos activos",  value: stats ? String(stats.articulosActivos)  : "…", color:"var(--olive)" },
-    { icon:"🛒", label:"Órdenes pendientes", value: stats ? String(stats.ordenesPendientes) : "…", color:"var(--gold)"  },
-    { icon:"👤", label:"Clientes activos",   value: stats ? String(stats.clientesActivos)   : "…", color:"#1e4fa0"      },
-    { icon:"🚛", label:"Despachos en ruta",  value: stats ? String(stats.despachosEnRuta)   : "…", color:"#2e6b4f"      },
-  ];
+        // Cargar datos en paralelo
+        const [
+          statsData,
+          salesData,
+          topProdsData,
+          salesMonthData,
+          recentSalesData,
+          lowStockData,
+          pendingOrdData,
+          newClientsData,
+          dispatchData,
+          inventoryCatData,
+        ] = await Promise.all([
+          dashboardRepository.getStats().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, stats: "No se pudo cargar estadísticas" }));
+            return null;
+          }),
+          dashboardRepository.getSalesSummary().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, sales: "No se pudo cargar resumen de ventas" }));
+            return null;
+          }),
+          dashboardRepository.getTopProducts().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, topProducts: "No se pudo cargar productos" }));
+            return [];
+          }),
+          dashboardRepository.getSalesByMonth().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, salesMonth: "No se pudo cargar gráfico" }));
+            return [];
+          }),
+          dashboardRepository.getRecentSales(10).catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, recentSales: "No se pudo cargar órdenes recientes" }));
+            return [];
+          }),
+          dashboardRepository.getLowStock().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, lowStock: "No se pudo cargar stock bajo" }));
+            return [];
+          }),
+          dashboardRepository.getPendingOrders().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, pendingOrders: "No se pudo cargar órdenes pendientes" }));
+            return null;
+          }),
+          dashboardRepository.getNewClients().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, newClients: "No se pudo cargar clientes nuevos" }));
+            return null;
+          }),
+          dashboardRepository.getDispatchStatus().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, dispatch: "No se pudo cargar despachos" }));
+            return null;
+          }),
+          dashboardRepository.getInventoryByCategory().catch((err: any) => {
+            setErrors((e: Record<string, string>) => ({ ...e, inventory: "No se pudo cargar inventario" }));
+            return [];
+          }),
+        ]);
+
+        setStats(statsData);
+        setSalesSummary(salesData);
+        setTopProducts(topProdsData || []);
+        setSalesByMonth(salesMonthData || []);
+        setRecentSales(recentSalesData || []);
+        setLowStock(lowStockData || []);
+        setPendingOrders(pendingOrdData);
+        setNewClients(newClientsData);
+        setDispatchStatus(dispatchData);
+        setInventoryByCategory(inventoryCatData || []);
+      } catch (error) {
+        console.error("Error loading dashboard:", error);
+      } finally {
+        setStatsLoading(false);
+        setSalesSummaryLoading(false);
+        setTopProductsLoading(false);
+        setSalesByMonthLoading(false);
+        setRecentSalesLoading(false);
+        setLowStockLoading(false);
+        setInventoryByCategoryLoading(false);
+        setPendingOrdersLoading(false);
+        setNewClientsLoading(false);
+        setDispatchStatusLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []);
 
   return (
     <div className="fadeUp">
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(160px, 1fr))", gap:12, marginBottom:24 }}>
-        {cards.map(s => (
-          <div key={s.label} style={{
-            padding:"18px 16px", background:"var(--bg3)", border:"1px solid var(--sand)",
-            borderRadius:"var(--radiusLg)", borderLeft:`3px solid ${s.color}`,
-          }}>
-            <div style={{ fontSize:28, marginBottom:8 }}>{s.icon}</div>
-            <div style={{ fontSize:22, fontWeight:700, color:s.color, marginBottom:2 }}>{s.value}</div>
-            <div style={{ fontSize:11, color:"var(--txtMuted)" }}>{s.label}</div>
-          </div>
-        ))}
+      {/* ─── FILA 1: KPI Principales ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <DashboardWidget
+          icon="🪑"
+          title="Artículos activos"
+          value={stats?.articulosActivos ?? "…"}
+          color="var(--olive)"
+          loading={statsLoading}
+          size="medium"
+          exportRows={stats ? [{ label: "Artículos activos", value: stats.articulosActivos }] : undefined}
+          exportFilename="articulos_activos"
+        />
+        <DashboardWidget
+          icon="🛒"
+          title="Órdenes pendientes"
+          value={stats?.ordenesPendientes ?? "…"}
+          color="var(--gold)"
+          loading={statsLoading}
+          size="medium"
+          exportRows={stats ? [{ label: "Órdenes pendientes", value: stats.ordenesPendientes }] : undefined}
+          exportFilename="ordenes_pendientes"
+        />
+        <DashboardWidget
+          icon="👤"
+          title="Clientes activos"
+          value={stats?.clientesActivos ?? "…"}
+          color="#1e4fa0"
+          loading={statsLoading}
+          size="medium"
+          exportRows={stats ? [{ label: "Clientes activos", value: stats.clientesActivos }] : undefined}
+          exportFilename="clientes_activos"
+        />
+        <DashboardWidget
+          icon="🚛"
+          title="Despachos en ruta"
+          value={stats?.despachosEnRuta ?? "…"}
+          color="#2e6b4f"
+          loading={statsLoading}
+          size="medium"
+          exportRows={stats ? [{ label: "Despachos en ruta", value: stats.despachosEnRuta }] : undefined}
+          exportFilename="despachos_en_ruta"
+        />
       </div>
-      <div style={{ padding:"20px", background:"var(--bg3)", border:"1px solid var(--sand)", borderRadius:"var(--radiusLg)" }}>
-        <p style={{ fontFamily:"Cormorant Garamond, serif", fontSize:18, fontWeight:400, marginBottom:8 }}>Sistema ERP activo</p>
-        <p style={{ fontSize:13, color:"var(--txtMuted)", lineHeight:1.7 }}>
-          Panel administrativo de Muebles Los Alpes. Selecciona un módulo en el menú lateral
-          para gestionar empleados, inventario, compras, ventas, producción y transporte.
+
+      {/* ─── FILA 2: Resumen de Ventas ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <DashboardWidget
+          icon="💰"
+          title="Total de ventas (mes)"
+          value={
+            salesSummary?.totalVentas
+              ? `$${Number(salesSummary.totalVentas).toLocaleString("es-ES", { maximumFractionDigits: 2 })}`
+              : "…"
+          }
+          subtitle={salesSummary ? `${salesSummary.totalOrdenes} órdenes` : ""}
+          color="var(--gold)"
+          loading={salesSummaryLoading}
+          error={errors.sales}
+          size="medium"
+          exportRows={salesSummary ? [
+            { label: "Total ventas", value: salesSummary.totalVentas },
+            { label: "Total órdenes", value: salesSummary.totalOrdenes },
+            { label: "Promedio venta", value: salesSummary.promedioVenta },
+          ] : undefined}
+          exportFilename="resumen_ventas_mes"
+        />
+        <DashboardWidget
+          icon="✓"
+          title="Órdenes completadas"
+          value={salesSummary?.ordenesCompletadas ?? "…"}
+          subtitle={salesSummary ? `De ${salesSummary.totalOrdenes} total` : ""}
+          color="#2e6b4f"
+          loading={salesSummaryLoading}
+          error={errors.sales}
+          size="medium"
+          exportRows={salesSummary ? [
+            { label: "Órdenes completadas", value: salesSummary.ordenesCompletadas },
+            { label: "Total órdenes", value: salesSummary.totalOrdenes },
+          ] : undefined}
+          exportFilename="ordenes_completadas"
+        />
+        <DashboardWidget
+          icon="⏱"
+          title="Órdenes en proceso"
+          value={salesSummary?.ordenesEnProceso ?? "…"}
+          subtitle={salesSummary ? `Promedio: $${Number(salesSummary.promedioVenta || 0).toLocaleString("es-ES", { maximumFractionDigits: 2 })}` : ""}
+          color="#ff9500"
+          loading={salesSummaryLoading}
+          error={errors.sales}
+          size="medium"
+          exportRows={salesSummary ? [
+            { label: "Órdenes en proceso", value: salesSummary.ordenesEnProceso },
+            { label: "Promedio venta", value: salesSummary.promedioVenta },
+          ] : undefined}
+          exportFilename="ordenes_en_proceso"
+        />
+      </div>
+
+      {/* ─── FILA 3: Gráfico de Ventas y Top Productos ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <SimpleLineChart
+          title="Ingresos por mes"
+          icon="📈"
+          data={salesByMonth}
+          loading={salesByMonthLoading}
+          error={errors.salesMonth}
+          color="var(--gold)"
+          exportFilename="ingresos_por_mes"
+        />
+
+        <DashboardTableWidget
+          icon="⭐"
+          title="Top 5 Artículos vendidos"
+          columns={[
+            { key: "nombre", label: "Artículo" },
+            { key: "cantidadVendida", label: "Cantidad" },
+            { key: "totalVendido", label: "Total" },
+          ]}
+          data={topProducts.map((p: any) => ({
+            nombre: p.nombre,
+            cantidadVendida: p.cantidadVendida,
+            totalVendido: `$${Number(p.totalVendido || 0).toLocaleString("es-ES", { maximumFractionDigits: 2 })}`,
+          }))}
+          loading={topProductsLoading}
+          error={errors.topProducts}
+          color="var(--olive)"
+          exportFilename="top_articulos_vendidos"
+        />
+      </div>
+
+      {/* ─── FILA 4: Inventario y Stock ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <DashboardTableWidget
+          icon="⚠"
+          title="Stock bajo (10 primeros)"
+          columns={[
+            { key: "nombre", label: "Artículo" },
+            { key: "stockActual", label: "Actual" },
+            { key: "stockMinimo", label: "Mínimo" },
+          ]}
+          data={lowStock.slice(0, 10).map(item => ({
+            nombre: item.nombre,
+            stockActual: item.stockActual,
+            stockMinimo: item.stockMinimo,
+          }))}
+          loading={lowStockLoading}
+          error={errors.lowStock}
+          color="#c41e3a"
+          exportFilename="stock_bajo"
+        />
+
+        <DashboardTableWidget
+          icon="📦"
+          title="Inventario por categoría"
+          columns={[
+            { key: "categoria", label: "Categoría" },
+            { key: "totalArticulos", label: "Artículos" },
+            { key: "cantidadTotal", label: "Stock" },
+          ]}
+          data={inventoryByCategory.map(cat => ({
+            categoria: cat.categoria || "Sin categoría",
+            totalArticulos: cat.totalArticulos,
+            cantidadTotal: cat.cantidadTotal,
+          }))}
+          loading={inventoryByCategoryLoading}
+          error={errors.inventory}
+          color="var(--olive)"
+          exportFilename="inventario_por_categoria"
+        />
+      </div>
+
+      {/* ─── FILA 5: Órdenes de Compra y Despachos ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <DashboardWidget
+          icon="📋"
+          title="Órdenes compra pendientes"
+          value={pendingOrders?.totalPendientes ?? "…"}
+          subtitle={pendingOrders ? `${pendingOrders.ordenesPendientes} P, ${pendingOrders.ordenesEnProceso} E` : ""}
+          color="#1e4fa0"
+          loading={pendingOrdersLoading}
+          error={errors.pendingOrders}
+          size="medium"
+          exportRows={pendingOrders ? [
+            { label: "Total pendientes", value: pendingOrders.totalPendientes },
+            { label: "Órdenes pendientes", value: pendingOrders.ordenesPendientes },
+            { label: "Órdenes en proceso", value: pendingOrders.ordenesEnProceso },
+          ] : undefined}
+          exportFilename="ordenes_compra_pendientes"
+        />
+        <DashboardWidget
+          icon="👥"
+          title="Clientes nuevos (mes)"
+          value={newClients?.totalNuevos ?? "…"}
+          subtitle={newClients ? `${newClients.clientesConCompras} con compras` : ""}
+          color="#2e6b4f"
+          loading={newClientsLoading}
+          error={errors.newClients}
+          size="medium"
+          exportRows={newClients ? [
+            { label: "Clientes nuevos", value: newClients.totalNuevos },
+            { label: "Con compras", value: newClients.clientesConCompras },
+          ] : undefined}
+          exportFilename="clientes_nuevos_mes"
+        />
+        <DashboardWidget
+          icon="🚚"
+          title="Despachos programados"
+          value={dispatchStatus?.totalDespachos ?? "…"}
+          subtitle={dispatchStatus ? `E: ${dispatchStatus.enProgreso}` : ""}
+          color="#ff9500"
+          loading={dispatchStatusLoading}
+          error={errors.dispatch}
+          size="medium"
+          exportRows={dispatchStatus ? [
+            { label: "Total despachos", value: dispatchStatus.totalDespachos },
+            { label: "Pendientes", value: dispatchStatus.pendientes },
+            { label: "En progreso", value: dispatchStatus.enProgreso },
+            { label: "Completados", value: dispatchStatus.completados },
+          ] : undefined}
+          exportFilename="despachos_programados"
+        />
+      </div>
+
+      {/* ─── FILA 6: Últimas Órdenes de Venta ─── */}
+      <div style={{ marginBottom: 24 }}>
+        <DashboardTableWidget
+          icon="📊"
+          title="Últimas órdenes de venta"
+          columns={[
+            { key: "numero", label: "N° Orden" },
+            { key: "cliente", label: "Cliente" },
+            { key: "fecha", label: "Fecha" },
+            { key: "total", label: "Total" },
+            { key: "estado", label: "Estado" },
+          ]}
+          data={recentSales.map(sale => ({
+            numero: sale.numero,
+            cliente: sale.cliente || "N/A",
+            fecha: sale.fecha ? new Date(sale.fecha).toLocaleDateString("es-ES") : "N/A",
+            total: `$${Number(sale.total || 0).toLocaleString("es-ES", { maximumFractionDigits: 2 })}`,
+            estado: sale.estado,
+          }))}
+          loading={recentSalesLoading}
+          error={errors.recentSales}
+          color="var(--gold)"
+          exportFilename="ultimas_ordenes_venta"
+        />
+      </div>
+
+      {/* ─── INFORMACIÓN ADICIONAL ─── */}
+      <div style={{ padding: "20px", background: "var(--bg3)", border: "1px solid var(--sand)", borderRadius: "var(--radiusLg)" }}>
+        <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 18, fontWeight: 400, marginBottom: 8 }}>
+          📊 Panel de Control ERP
+        </p>
+        <p style={{ fontSize: 13, color: "var(--txtMuted)", lineHeight: 1.7 }}>
+          Panel administrativo de Muebles Los Alpes. Este dashboard muestra en tiempo real el estado de ventas, inventario,
+          órdenes de compra y despachos. Selecciona un módulo en el menú lateral para gestionar empleados, inventario,
+          compras, ventas, producción y transporte en detalle.
         </p>
       </div>
     </div>

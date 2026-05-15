@@ -784,22 +784,5 @@ public record EntregaDto(string? ObservacionesEntrega, string? EstadoEntrega, lo
 
 
 // ── Dashboard ─────────────────────────────────────────────────
-
-[Route("api/dashboard")]
-public class DashboardController(OracleHelper db) : BaseController(db)
-{
-    [HttpGet("stats")]
-    public IActionResult GetStats()
-    {
-        var sql = @"SELECT
-            (SELECT COUNT(*) FROM ARTICULO       WHERE ESTADO_ARTICULO        = 'A') AS ARTICULOS_ACTIVOS,
-            (SELECT COUNT(*) FROM ORDEN_VENTA    WHERE ESTADO_ORDEN_VENTA     = 'P') AS ORDENES_PENDIENTES,
-            (SELECT COUNT(*) FROM CLIENTE        WHERE ESTADO_CLIENTE         = 'A') AS CLIENTES_ACTIVOS,
-            (SELECT COUNT(*) FROM ORDEN_DESPACHADO WHERE ESTADO_ORDEN_DESPACHADO = 'E') AS DESPACHOS_EN_RUTA
-        FROM DUAL";
-
-        var dt = _db.ExecuteReader(sql);
-        var row = OracleHelper.ToList(dt)[0];
-        return Ok(row);
-    }
-}
+// El controlador de dashboard antiguo se eliminó para evitar conflictos de rutas.
+// Las APIs del dashboard ahora están centralizadas en Controllers/Dashboard/DashboardController.cs
