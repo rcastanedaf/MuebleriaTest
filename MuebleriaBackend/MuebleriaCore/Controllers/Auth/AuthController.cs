@@ -24,9 +24,11 @@ public class AuthController : BaseController
 
         var sql = @"SELECT U.ID_USUARIO, U.USERNAME_USUARIO, U.PASSWORD_USUARIO,
                            U.EMAIL_USUARIO, U.ESTADO_USUARIO,
-                           R.NOMBRE_ROL, U.ID_SUCURSAL
+                           R.NOMBRE_ROL, U.ID_SUCURSAL,
+                           C.ID_CLIENTE
                     FROM   USUARIOS U
                     JOIN   ROLES R ON R.ID_ROL = U.ID_ROL
+                    LEFT JOIN CLIENTE C ON LOWER(C.EMAIL_CLIENTE) = LOWER(U.EMAIL_USUARIO)
                     WHERE  LOWER(U.EMAIL_USUARIO) = LOWER(:p_email)
                       AND  U.ESTADO_USUARIO = 'A'";
 
@@ -40,10 +42,12 @@ public class AuthController : BaseController
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, hash))
             return Unauthorized(new { message = "Credenciales inválidas." });
 
-        var userId = OracleHelper.ConvertOracleToLong(row["ID_USUARIO"]);
-        var email  = row["EMAIL_USUARIO"]?.ToString() ?? "";
-        var name   = row["USERNAME_USUARIO"]?.ToString() ?? "";
-        var role   = row["NOMBRE_ROL"]?.ToString()?.ToLower() ?? "cliente";
+        var userId    = OracleHelper.ConvertOracleToLong(row["ID_USUARIO"]);
+        var email     = row["EMAIL_USUARIO"]?.ToString() ?? "";
+        var name      = row["USERNAME_USUARIO"]?.ToString() ?? "";
+        var role      = row["NOMBRE_ROL"]?.ToString()?.ToLower() ?? "cliente";
+        var idCliente = row["ID_CLIENTE"] == DBNull.Value ? (long?)null
+                        : OracleHelper.ConvertOracleToLong(row["ID_CLIENTE"]);
 
         // Actualizar último acceso
         _db.ExecuteNonQuery(
@@ -62,7 +66,8 @@ public class AuthController : BaseController
                 email,
                 role,
                 idSucursal = row["ID_SUCURSAL"] == DBNull.Value ? (object?)null
-                             : OracleHelper.ConvertOracleToLong(row["ID_SUCURSAL"])
+                             : OracleHelper.ConvertOracleToLong(row["ID_SUCURSAL"]),
+                idCliente  = (object?)idCliente
             }
         });
     }
@@ -116,6 +121,7 @@ public class AuthController : BaseController
             cmdC.Parameters.Add(OracleHelper.P("p_email", dto.Email));
             cmdC.Parameters.Add(OracleHelper.POut("p_id_out"));
             cmdC.ExecuteNonQuery();
+            var newClienteId = OracleHelper.ConvertOracleToLong(cmdC.Parameters["p_id_out"].Value);
 
             // 2) INSERT USUARIO
             var sqlUser = @"INSERT INTO USUARIOS
@@ -142,16 +148,54 @@ public class AuthController : BaseController
                 token,
                 user = new
                 {
-                    id      = newUserId,
-                    name    = dto.Name,
-                    email   = dto.Email,
-                    nit     = dto.Nit,
-                    phone   = dto.Phone,
-                    city    = dto.City,
-                    country = dto.Country,
-                    role    = "cliente"
+                    id        = newUserId,
+                    name      = dto.Name,
+                    email     = dto.Email,
+                    nit       = dto.Nit,
+                    phone     = dto.Phone,
+                    city      = dto.City,
+                    country   = dto.Country,
+                    role      = "cliente",
+                    idCliente = (object?)newClienteId
                 }
             });
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
+    }
+
+    // ── GET /api/auth/mis-permisos ────────────────────────────
+    [HttpGet("mis-permisos")]
+    public IActionResult MisPermisos()
+    {
+        try
+        {
+            var role = CurrentUserRole;
+            if (string.IsNullOrEmpty(role))
+                return Ok(new { esAdmin = false, modulos = Array.Empty<string>() });
+
+            // role ya viene en minúsculas desde el JWT; comparamos sin LOWER en el parámetro
+            var rangoRaw = _db.ExecuteScalar(
+                "SELECT RANGO_ROL FROM ROLES WHERE LOWER(NOMBRE_ROL) = :p_rol",
+                [OracleHelper.P("p_rol", role)]);
+            var rango = OracleHelper.ConvertOracleToInt(rangoRaw);
+
+            if (rango == 1)
+                return Ok(new { esAdmin = true, modulos = (string[]?)null });
+
+            var dt = _db.ExecuteReader(
+                @"SELECT DISTINCT P.MODULO_PERMISO
+                  FROM   PERMISOS P
+                  JOIN   USUARIOS U ON U.ID_ROL = P.ID_ROL
+                  WHERE  U.ID_USUARIO = :p_uid
+                    AND  P.MODULO_PERMISO IS NOT NULL",
+                [OracleHelper.PInt("p_uid", CurrentUserId)]);
+
+            var modulos = OracleHelper.ToList(dt)
+                .Select(row => row["moduloPermiso"]?.ToString() ?? "")
+                .Where(m => m.Length > 0)
+                .ToArray();
+
+            return Ok(new { esAdmin = false, modulos });
         }
         catch (OracleException ex) { return HandleOracleError(ex); }
     }

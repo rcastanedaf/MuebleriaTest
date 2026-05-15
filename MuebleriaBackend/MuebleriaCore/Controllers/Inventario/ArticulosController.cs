@@ -12,6 +12,7 @@ public class ArticulosController : BaseController
 
     // ── GET /api/articulos ────────────────────────────────────
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult GetAll(
         [FromQuery] string? tipo   = null,
         [FromQuery] string? search = null,

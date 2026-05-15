@@ -7,7 +7,10 @@ using MuebleriaCore.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Controllers + JSON camelCase ─────────────────────────────
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
+})
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.PropertyNamingPolicy =

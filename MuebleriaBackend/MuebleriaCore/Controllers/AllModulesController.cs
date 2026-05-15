@@ -123,23 +123,39 @@ public class UsuariosController(OracleHelper db) : BaseController(db)
         OkList(_db.ExecuteReader("SELECT U.ID_USUARIO,U.USERNAME_USUARIO,U.EMAIL_USUARIO,U.ESTADO_USUARIO,U.ULTIMO_ACCESO_USUARIO,R.NOMBRE_ROL,S.NOMBRE_SUCURSAL FROM USUARIOS U JOIN ROLES R ON R.ID_ROL=U.ID_ROL JOIN SUCURSALES S ON S.ID_SUCURSAL=U.ID_SUCURSAL ORDER BY U.USERNAME_USUARIO"));
     [HttpPost] public IActionResult Create([FromBody] UsuarioDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO USUARIOS(USERNAME_USUARIO,PASSWORD_USUARIO,EMAIL_USUARIO,ESTADO_USUARIO,ID_ROL,ID_SUCURSAL)
-                                    VALUES(:u,:p,:e,NVL(:est,'A'),:r,:s) RETURNING ID_USUARIO INTO :p_id_out",
-            [OracleHelper.P("u",d.UsernameUsuario),OracleHelper.P("p",BCrypt.Net.BCrypt.HashPassword(d.PasswordUsuario??"temp",12)),
-             OracleHelper.P("e",d.EmailUsuario),OracleHelper.P("est",d.EstadoUsuario),OracleHelper.PInt("r",d.IdRol),
-             OracleHelper.PInt("s",d.IdSucursal),OracleHelper.POut("p_id_out")]);
-        return Created($"api/usuarios/{id}", new { idUsuario = id });
+        try
+        {
+            var id = _db.ExecuteInsert(@"INSERT INTO USUARIOS(USERNAME_USUARIO,PASSWORD_USUARIO,EMAIL_USUARIO,ESTADO_USUARIO,ID_ROL,ID_SUCURSAL)
+                                        VALUES(:u,:p,:e,NVL(:est,'A'),:r,:s) RETURNING ID_USUARIO INTO :p_id_out",
+                [OracleHelper.P("u",d.UsernameUsuario),OracleHelper.P("p",BCrypt.Net.BCrypt.HashPassword(d.PasswordUsuario??"temp",12)),
+                 OracleHelper.P("e",d.EmailUsuario),OracleHelper.P("est",d.EstadoUsuario),OracleHelper.PInt("r",d.IdRol),
+                 OracleHelper.PInt("s",d.IdSucursal),OracleHelper.POut("p_id_out")]);
+            return Created($"api/usuarios/{id}", new { idUsuario = id });
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] UsuarioDto d)
     {
-        _db.ExecuteNonQuery("UPDATE USUARIOS SET EMAIL_USUARIO=NVL(:e,EMAIL_USUARIO),ESTADO_USUARIO=NVL(:est,ESTADO_USUARIO),ID_ROL=NVL(:r,ID_ROL) WHERE ID_USUARIO=:p",
-            [OracleHelper.P("e",d.EmailUsuario),OracleHelper.P("est",d.EstadoUsuario),OracleHelper.PInt("r",d.IdRol),OracleHelper.PInt("p",id)]);
-        return Ok();
+        try
+        {
+            var hashedPwd = string.IsNullOrEmpty(d.PasswordUsuario) ? null
+                : BCrypt.Net.BCrypt.HashPassword(d.PasswordUsuario, 12);
+            _db.ExecuteNonQuery(
+                "UPDATE USUARIOS SET EMAIL_USUARIO=NVL(:e,EMAIL_USUARIO),ESTADO_USUARIO=NVL(:est,ESTADO_USUARIO),ID_ROL=NVL(:r,ID_ROL),PASSWORD_USUARIO=NVL(:p,PASSWORD_USUARIO) WHERE ID_USUARIO=:id",
+                [OracleHelper.P("e",d.EmailUsuario),OracleHelper.P("est",d.EstadoUsuario),
+                 OracleHelper.PInt("r",d.IdRol),OracleHelper.P("p",hashedPwd),OracleHelper.PInt("id",id)]);
+            return Ok();
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE USUARIOS SET ESTADO_USUARIO='I' WHERE ID_USUARIO=:p", [OracleHelper.PInt("p",id)]);
-        return Ok();
+        try
+        {
+            _db.ExecuteNonQuery("UPDATE USUARIOS SET ESTADO_USUARIO='I' WHERE ID_USUARIO=:p", [OracleHelper.PInt("p",id)]);
+            return Ok();
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
 public record UsuarioDto(string? UsernameUsuario, string? PasswordUsuario, string? EmailUsuario, string? EstadoUsuario, long? IdRol, long? IdSucursal);
@@ -150,6 +166,19 @@ public class PermisosController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
         OkList(_db.ExecuteReader("SELECT P.*,R.NOMBRE_ROL FROM PERMISOS P JOIN ROLES R ON R.ID_ROL=P.ID_ROL ORDER BY P.MODULO_PERMISO"));
+
+    // Returns one row per (role × module) combination; idPermiso is null if not yet granted
+    [HttpGet("matriz")] public IActionResult GetMatriz()
+    {
+        var sql = @"SELECT R.ID_ROL, R.NOMBRE_ROL, R.RANGO_ROL,
+                           P.ID_PERMISO, P.MODULO_PERMISO
+                    FROM   ROLES R
+                    LEFT JOIN PERMISOS P ON P.ID_ROL = R.ID_ROL
+                    WHERE  LOWER(R.NOMBRE_ROL) NOT IN ('admin','cliente')
+                    ORDER BY R.RANGO_ROL, P.MODULO_PERMISO";
+        return OkList(_db.ExecuteReader(sql));
+    }
+
     [HttpPost] public IActionResult Create([FromBody] PermisoDto d)
     {
         var id = _db.ExecuteInsert("INSERT INTO PERMISOS(NOMBRE_PERMISO,DESCRIPCION_PERMISO,MODULO_PERMISO,ESTADO,ID_ROL) VALUES(:n,:d,:m,NVL(:est,'A'),:r) RETURNING ID_PERMISO INTO :p_id_out",
@@ -164,8 +193,8 @@ public class PermisosController(OracleHelper db) : BaseController(db)
     }
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE PERMISOS SET ESTADO='I' WHERE ID_PERMISO=:p", [OracleHelper.PInt("p",id)]);
-        return Ok();
+        _db.ExecuteNonQuery("DELETE FROM PERMISOS WHERE ID_PERMISO=:p_id", [OracleHelper.PInt("p_id",id)]);
+        return NoContent();
     }
 }
 public record PermisoDto(string? NombrePermiso, string? DescripcionPermiso, string? ModuloPermiso, string? Estado, long? IdRol);
