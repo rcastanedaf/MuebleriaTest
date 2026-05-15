@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo *)",
+      "Bash(npx tsc *)",
+      "Bash(ipconfig)",
+      "Bash(npm install *)",
+      "Bash(openssl x509 *)",
+      "Bash(find \"/c/Users/rcast\" -name \"ngrok.exe\" 2>/dev/null | head -5)",
+      "Read(//c/Users/rcast/**)"
+    ]
+  }
+}

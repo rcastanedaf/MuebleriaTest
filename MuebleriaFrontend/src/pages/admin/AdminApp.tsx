@@ -10,7 +10,7 @@ import {
   ordenesVentaRepo, ordenesCompraRepo, vehiculosRepo, transportistasRepo,
   despachosRepo, ordenesProducRepo, nominaRepo, usuariosRepo,
   bodegasRepo, sucursalesRepo, rolesRepo, cargosRepo, listaPreciosRepo,
-  centrosTrabajoRepo, bomRepo,
+  centrosTrabajoRepo, bomRepo, empresasRepo,
 } from "../../features/admin/data/adminRepository";
 
 interface Props { showToast: (msg: string, type?: "success"|"error") => void; }
@@ -205,6 +205,7 @@ function CrudTable<T extends Record<string,any>>({
   const [transportistas, setTransportistas] = useState<Array<{value: string, label: string}>>([]);
   const [centrosTrabajo, setCentrosTrabajo] = useState<Array<{value: string, label: string}>>([]);
   const [listasMateriales, setListasMateriales] = useState<Array<{value: string, label: string}>>([]);
+  const [empresas, setEmpresas] = useState<Array<{value: string, label: string}>>([]);
 
   // Load options on mount
   useEffect(() => {
@@ -250,6 +251,10 @@ function CrudTable<T extends Record<string,any>>({
           const lm = await bomRepo.getAll();
           setListasMateriales(lm.map(x => ({ value: String(x.idListaMateriales), label: x.nombreListaMateriales })));
         }
+        if (columns.includes('idEmpresa') || columns.includes('nombreEmpresa')) {
+          const emp = await empresasRepo.getAll();
+          setEmpresas(emp.map(x => ({ value: String(x.idEmpresa), label: x.nombreEmpresa })));
+        }
       } catch (error) {
         console.error('Error loading select options:', error);
       }
@@ -260,9 +265,18 @@ function CrudTable<T extends Record<string,any>>({
   const setField = (k: string, v: string) => setFormData(f => ({ ...f, [k]: v }));
 
   // Convert form data to appropriate types before sending to backend
+  // Fields shown by name in the table but sent as ID to the backend
+  const nameToIdField: Record<string, string> = {
+    nombreEmpresa: "idEmpresa",
+  };
+
   const convertFormData = (data: Record<string, string>): Partial<T> => {
     const converted: Record<string, any> = {};
     for (const [key, value] of Object.entries(data)) {
+      if (nameToIdField[key]) {
+        converted[nameToIdField[key]] = value === "" ? null : Number(value);
+        continue;
+      }
       // Convert numeric fields
       if (key.toLowerCase().includes('precio') ||
           key.toLowerCase().includes('total') ||
@@ -404,6 +418,8 @@ function CrudTable<T extends Record<string,any>>({
       nombreCentroTrabajo: centrosTrabajo,
       idListaMateriales: listasMateriales,
       nombreListaMateriales: listasMateriales,
+      idEmpresa: empresas,
+      nombreEmpresa: empresas,
     };
 
     if (selectConfigs[fieldName]) return selectConfigs[fieldName];

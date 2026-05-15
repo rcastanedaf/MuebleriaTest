@@ -1,5 +1,6 @@
 // shared/components/index.tsx
 import React, { useState, useCallback } from "react";
+import ReactDOM from "react-dom";
 import type { BadgeVariant } from "../utils";
 
 // ── Button ────────────────────────────────────────────────────
@@ -108,20 +109,16 @@ export const Modal: React.FC<{
     return () => document.removeEventListener("keydown", h);
   }, [isOpen, onClose]);
   if (!isOpen) return null;
-  return (
+  return ReactDOM.createPortal(
     <div
       onClick={e => e.target === e.currentTarget && onClose()}
       style={{
         position: "fixed", inset: 0, zIndex: 1000, background: "rgba(26,23,20,0.55)",
         backdropFilter: "blur(4px)", display: "flex", alignItems: "center",
-        justifyContent: "center", padding: 16, overflowY: "auto", minHeight: "100vh",
+        justifyContent: "center", padding: 16,
       }}
     >
       <div style={{
-        position: "relative",
-        top: 0,
-        left: 0,
-        transform: "none",
         background: "var(--bg3)", border: "1px solid var(--sand)", borderRadius: "var(--radiusLg)",
         width: "100%", maxWidth: width, maxHeight: "90vh", display: "flex", flexDirection: "column",
         boxShadow: "0 8px 40px rgba(26,23,20,0.22)",
@@ -134,7 +131,8 @@ export const Modal: React.FC<{
         )}
         <div style={{ padding: "18px 20px", overflowY: "auto", flex: 1 }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
