@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("tmp-schema-check")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76d1410daf1f334d3ae4cf0d0c0fc2a022f7aabc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6e90a24a024e4bc2bd121854e3277189eb7e53be")]
 [assembly: System.Reflection.AssemblyProductAttribute("tmp-schema-check")]
 [assembly: System.Reflection.AssemblyTitleAttribute("tmp-schema-check")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

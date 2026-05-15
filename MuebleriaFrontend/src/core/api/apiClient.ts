@@ -4,12 +4,37 @@
 const API_BASE_URL =
   (process.env.REACT_APP_API_URL as string) ?? "https://localhost:56935/api";
 
-const TOKEN_KEY = "alpes_token";
+const TOKEN_KEY   = "alpes_token";
+const USER_KEY    = "alpes_user";
+const MODULES_KEY = "alpes_modules";
 
 export const tokenStorage = {
-  get: (): string | null => sessionStorage.getItem(TOKEN_KEY),
-  set: (token: string): void => sessionStorage.setItem(TOKEN_KEY, token),
-  clear: (): void => sessionStorage.removeItem(TOKEN_KEY),
+  get: (): string | null => localStorage.getItem(TOKEN_KEY),
+  set: (token: string): void => localStorage.setItem(TOKEN_KEY, token),
+  clear: (): void => localStorage.removeItem(TOKEN_KEY),
+};
+
+export const userStorage = {
+  get: <T>(): T | null => {
+    try {
+      const raw = localStorage.getItem(USER_KEY);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch { return null; }
+  },
+  set: (value: unknown): void => localStorage.setItem(USER_KEY, JSON.stringify(value)),
+  clear: (): void => localStorage.removeItem(USER_KEY),
+};
+
+export const modulesStorage = {
+  get: (): string[] | null => {
+    try {
+      const raw = localStorage.getItem(MODULES_KEY);
+      if (!raw || raw === "null") return null;
+      return JSON.parse(raw) as string[];
+    } catch { return null; }
+  },
+  set: (value: string[] | null): void => localStorage.setItem(MODULES_KEY, JSON.stringify(value)),
+  clear: (): void => localStorage.removeItem(MODULES_KEY),
 };
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -42,7 +67,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw { status: response.status, message: (err as any).message ?? `HTTP ${response.status}`, data: err };
   }
   if (response.status === 204) return undefined as unknown as T;
-  return response.json() as Promise<T>;
+  const text = await response.text();
+  if (!text.trim()) return undefined as unknown as T;
+  return JSON.parse(text) as T;
 }
 
 export const apiClient = {

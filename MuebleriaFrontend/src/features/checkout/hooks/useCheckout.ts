@@ -25,7 +25,7 @@ export function useCheckout() {
     setLoading(true); setError(null);
     try {
       const result = await checkoutRepository.createOrder({
-        clienteId:   user?.id ?? 0,
+        clienteId:   user?.idCliente ?? 0,
         subtotal, impuesto: tax, total, metodoPago: method,
         descripcion: items.map(i => `${i.qty}x ${i.nombreArticulo}`).join(", "),
         items: items.map(i => ({ articuloId: i.idArticulo, cantidad: i.qty, precioUnitario: i.precio })),

@@ -1,5 +1,5 @@
 // features/auth/data/authRepository.ts
-import { apiClient, tokenStorage } from "../../../core/api/apiClient";
+import { apiClient, tokenStorage, userStorage } from "../../../core/api/apiClient";
 import { handleApiError } from "../../../core/errors/AppError";
 import type { AuthResponse, AuthUser, LoginPayload, RegisterPayload } from "../../../core/types";
 
@@ -8,6 +8,7 @@ export const authRepository = {
     try {
       const res = await apiClient.post<AuthResponse>("/auth/login", payload, false);
       tokenStorage.set(res.token);
+      userStorage.set(res.user);
       return res;
     } catch(e) { throw handleApiError(e); }
   },
@@ -15,6 +16,7 @@ export const authRepository = {
     try {
       const res = await apiClient.post<AuthResponse>("/auth/register", payload, false);
       tokenStorage.set(res.token);
+      userStorage.set(res.user);
       return res;
     } catch(e) { throw handleApiError(e); }
   },
@@ -22,5 +24,9 @@ export const authRepository = {
     try { return await apiClient.get<AuthUser>("/auth/profile"); }
     catch(e) { throw handleApiError(e); }
   },
-  logout(): void { tokenStorage.clear(); },
+  async getMisPermisos(): Promise<{ esAdmin: boolean; modulos: string[] | null }> {
+    try { return await apiClient.get("/auth/mis-permisos"); }
+    catch(e) { throw handleApiError(e); }
+  },
+  logout(): void { tokenStorage.clear(); userStorage.clear(); },
 };

@@ -22,17 +22,15 @@ public class AuthController : BaseController
         if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
             return BadRequest(new { message = "Email y contraseña son requeridos." });
 
-        var sql = @"SELECT U.ID_USUARIO, U.USERNAME_USUARIO, U.PASSWORD_USUARIO,
-                           U.EMAIL_USUARIO, U.ESTADO_USUARIO,
-                           R.NOMBRE_ROL, U.ID_SUCURSAL,
-                           C.ID_CLIENTE
-                    FROM   USUARIOS U
-                    JOIN   ROLES R ON R.ID_ROL = U.ID_ROL
-                    LEFT JOIN CLIENTE C ON LOWER(C.EMAIL_CLIENTE) = LOWER(U.EMAIL_USUARIO)
-                    WHERE  LOWER(U.EMAIL_USUARIO) = LOWER(:p_email)
-                      AND  U.ESTADO_USUARIO = 'A'";
+        // SELECT via VW_LOGIN_USUARIO
+        var dt = _db.ExecuteReader(
+            @"SELECT ID_USUARIO, USERNAME_USUARIO, PASSWORD_USUARIO,
+                     EMAIL_USUARIO, ESTADO_USUARIO, NOMBRE_ROL, ID_SUCURSAL, ID_CLIENTE
+              FROM   VW_LOGIN_USUARIO
+              WHERE  LOWER(EMAIL_USUARIO) = LOWER(:p_email)
+                AND  ESTADO_USUARIO = 'A'",
+            [OracleHelper.P("p_email", dto.Email)]);
 
-        var dt = _db.ExecuteReader(sql, [OracleHelper.P("p_email", dto.Email)]);
         if (dt.Rows.Count == 0)
             return Unauthorized(new { message = "Credenciales inválidas." });
 
@@ -49,10 +47,10 @@ public class AuthController : BaseController
         var idCliente = row["ID_CLIENTE"] == DBNull.Value ? (long?)null
                         : OracleHelper.ConvertOracleToLong(row["ID_CLIENTE"]);
 
-        // Actualizar último acceso
-        _db.ExecuteNonQuery(
-            "UPDATE USUARIOS SET ULTIMO_ACCESO_USUARIO = SYSTIMESTAMP WHERE ID_USUARIO = :p_id",
-            [OracleHelper.PInt("p_id", userId)]);
+        // UPDATE via SP_USR_UPD_ACCESO
+        _db.ExecuteNonQuery("SP_USR_UPD_ACCESO",
+            [OracleHelper.PInt("p_id_usuario", userId)],
+            isStoredProc: true);
 
         var token = _jwt.GenerateToken(userId, email, role, name);
 
@@ -82,7 +80,6 @@ public class AuthController : BaseController
             string.IsNullOrWhiteSpace(dto.Password))
             return BadRequest(new { message = "Nombre, email y contraseña son requeridos." });
 
-        // Check email único
         var exists = OracleHelper.ConvertOracleToInt(
             _db.ExecuteScalar(
                 "SELECT COUNT(*) FROM USUARIOS WHERE LOWER(EMAIL_USUARIO) = LOWER(:e)",
@@ -90,15 +87,14 @@ public class AuthController : BaseController
         if (exists > 0)
             return Conflict(new { message = "El email ya está registrado." });
 
-        // Obtener rol cliente e ID sucursal principal
         var idRol = OracleHelper.ConvertOracleToLong(
             _db.ExecuteScalar(
-                "SELECT ID_ROL FROM ROLES WHERE LOWER(NOMBRE_ROL) = 'cliente' AND ROWNUM = 1")
+                "SELECT ID_ROL FROM VW_ROLES WHERE LOWER(NOMBRE_ROL) = 'cliente' AND ROWNUM = 1")
             ?? 2L);
 
         var idSuc = OracleHelper.ConvertOracleToLong(
             _db.ExecuteScalar(
-                "SELECT ID_SUCURSAL FROM SUCURSALES WHERE ESTADO_SUCURSAL = 'A' AND ROWNUM = 1")
+                "SELECT ID_SUCURSAL FROM VW_SUCURSALES WHERE ESTADO_SUCURSAL = 'A' AND ROWNUM = 1")
             ?? 1L);
 
         try
@@ -106,14 +102,9 @@ public class AuthController : BaseController
             using var conn = _db.GetConnection();
             using var txn  = conn.BeginTransaction();
 
-            // 1) INSERT CLIENTE
-            var sqlCliente = @"INSERT INTO CLIENTE
-                                (CODIGO_CLIENTE, RAZON_SOCIAL_CLIENTE, NIT_CLIENTE,
-                                 TELEFON_CLIENTE, EMAIL_CLIENTE, ESTADO_CLIENTE)
-                               VALUES (:p_cod, :p_nom, :p_nit, :p_tel, :p_email, 'A')
-                               RETURNING ID_CLIENTE INTO :p_id_out";
-
-            using var cmdC = new OracleCommand(sqlCliente, conn) { Transaction = txn, BindByName = true };
+            // 1) INSERT CLIENTE via SP_REG_INS_CLIENTE
+            using var cmdC = new OracleCommand("SP_REG_INS_CLIENTE", conn)
+                { CommandType = System.Data.CommandType.StoredProcedure, Transaction = txn, BindByName = true };
             cmdC.Parameters.Add(OracleHelper.P("p_cod",   "CLI-" + DateTime.Now.Ticks.ToString()[^8..]));
             cmdC.Parameters.Add(OracleHelper.P("p_nom",   dto.Name));
             cmdC.Parameters.Add(OracleHelper.P("p_nit",   dto.Nit ?? "CF"));
@@ -123,14 +114,9 @@ public class AuthController : BaseController
             cmdC.ExecuteNonQuery();
             var newClienteId = OracleHelper.ConvertOracleToLong(cmdC.Parameters["p_id_out"].Value);
 
-            // 2) INSERT USUARIO
-            var sqlUser = @"INSERT INTO USUARIOS
-                             (USERNAME_USUARIO, PASSWORD_USUARIO, EMAIL_USUARIO,
-                              ESTADO_USUARIO, ID_ROL, ID_SUCURSAL)
-                            VALUES (:p_user, :p_pass, :p_email, 'A', :p_rol, :p_suc)
-                            RETURNING ID_USUARIO INTO :p_id_out";
-
-            using var cmdU = new OracleCommand(sqlUser, conn) { Transaction = txn, BindByName = true };
+            // 2) INSERT USUARIO via SP_REG_INS_USUARIO
+            using var cmdU = new OracleCommand("SP_REG_INS_USUARIO", conn)
+                { CommandType = System.Data.CommandType.StoredProcedure, Transaction = txn, BindByName = true };
             cmdU.Parameters.Add(OracleHelper.P("p_user",  dto.Email.Split('@')[0]));
             cmdU.Parameters.Add(OracleHelper.P("p_pass",  BCrypt.Net.BCrypt.HashPassword(dto.Password, 12)));
             cmdU.Parameters.Add(OracleHelper.P("p_email", dto.Email));
@@ -173,21 +159,18 @@ public class AuthController : BaseController
             if (string.IsNullOrEmpty(role))
                 return Ok(new { esAdmin = false, modulos = Array.Empty<string>() });
 
-            // role ya viene en minúsculas desde el JWT; comparamos sin LOWER en el parámetro
+            // SELECT via VW_ROLES
             var rangoRaw = _db.ExecuteScalar(
-                "SELECT RANGO_ROL FROM ROLES WHERE LOWER(NOMBRE_ROL) = :p_rol",
+                "SELECT RANGO_ROL FROM VW_ROLES WHERE LOWER(NOMBRE_ROL) = :p_rol",
                 [OracleHelper.P("p_rol", role)]);
             var rango = OracleHelper.ConvertOracleToInt(rangoRaw);
 
             if (rango == 1)
                 return Ok(new { esAdmin = true, modulos = (string[]?)null });
 
+            // SELECT via VW_PERMISOS_USUARIO
             var dt = _db.ExecuteReader(
-                @"SELECT DISTINCT P.MODULO_PERMISO
-                  FROM   PERMISOS P
-                  JOIN   USUARIOS U ON U.ID_ROL = P.ID_ROL
-                  WHERE  U.ID_USUARIO = :p_uid
-                    AND  P.MODULO_PERMISO IS NOT NULL",
+                "SELECT MODULO_PERMISO FROM VW_PERMISOS_USUARIO WHERE ID_USUARIO = :p_uid",
                 [OracleHelper.PInt("p_uid", CurrentUserId)]);
 
             var modulos = OracleHelper.ToList(dt)
@@ -204,14 +187,10 @@ public class AuthController : BaseController
     [HttpGet("profile")]
     public IActionResult Profile()
     {
-        var sql = @"SELECT U.ID_USUARIO, U.USERNAME_USUARIO, U.EMAIL_USUARIO,
-                           U.ULTIMO_ACCESO_USUARIO, R.NOMBRE_ROL, S.NOMBRE_SUCURSAL
-                    FROM   USUARIOS U
-                    JOIN   ROLES R     ON R.ID_ROL      = U.ID_ROL
-                    JOIN   SUCURSALES S ON S.ID_SUCURSAL = U.ID_SUCURSAL
-                    WHERE  U.ID_USUARIO = :p_id";
-
-        var dt = _db.ExecuteReader(sql, [OracleHelper.PInt("p_id", CurrentUserId)]);
+        // SELECT via VW_PERFIL_USUARIO
+        var dt = _db.ExecuteReader(
+            "SELECT * FROM VW_PERFIL_USUARIO WHERE ID_USUARIO = :p_id",
+            [OracleHelper.PInt("p_id", CurrentUserId)]);
         if (dt.Rows.Count == 0) return NotFound();
         return Ok(OracleHelper.ToList(dt)[0]);
     }

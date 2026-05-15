@@ -14,7 +14,16 @@ export function useAuth() {
     const v = validateLogin(p);
     if (!v.valid) { setErrors(v.errors); return false; }
     setLoading(true); setErrors({});
-    try { const res = await authRepository.login(p); setUser(res.user); return true; }
+    try {
+      const res = await authRepository.login(p);
+      if (res.user.role !== "cliente") {
+        authRepository.logout();
+        setErrors({ general: "Este portal es para clientes. Accede a /admin para el panel administrativo." });
+        return false;
+      }
+      setUser(res.user);
+      return true;
+    }
     catch(e: any) { setErrors({ general: e.message ?? "Credenciales inválidas" }); return false; }
     finally { setLoading(false); }
   }, [setUser]);

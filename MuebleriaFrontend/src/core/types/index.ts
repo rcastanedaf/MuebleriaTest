@@ -262,7 +262,7 @@ export interface AuthResponse    { token: string; user: AuthUser; }
 export interface AuthUser {
   id: number; name: string; email: string; nit?: string;
   phone?: string; city?: string; country?: string; role: "admin" | "cliente";
-  idSucursal?: number;
+  idSucursal?: number; idCliente?: number;
 }
 export interface CartItem {
   cartId: number; idArticulo: number; codigoArticulo: string;

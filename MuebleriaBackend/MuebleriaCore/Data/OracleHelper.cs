@@ -69,15 +69,15 @@ public class OracleHelper
 
     // ── ExecuteInsert → returns new IDENTITY id ───────────────
     /// <summary>
-    /// Ejecuta un INSERT con RETURNING INTO y devuelve el ID generado.
+    /// Ejecuta un INSERT (SQL directo o procedimiento almacenado) y devuelve el ID generado.
     /// El parámetro OUTPUT debe llamarse "p_id_out" y ser de tipo Int64, Direction = Output.
     /// </summary>
-    public long ExecuteInsert(string sql, OracleParameter[] parameters)
+    public long ExecuteInsert(string sql, OracleParameter[] parameters, bool isStoredProc = false)
     {
         using var conn = GetConnection();
-        using var cmd  = new OracleCommand(sql, conn) 
-        { 
-            CommandType = CommandType.Text,
+        using var cmd  = new OracleCommand(sql, conn)
+        {
+            CommandType = isStoredProc ? CommandType.StoredProcedure : CommandType.Text,
             BindByName = true
         };
         cmd.Parameters.AddRange(parameters);

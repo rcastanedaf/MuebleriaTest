@@ -17,23 +17,18 @@ public class OrdenesVentaController : BaseController
         [FromQuery] int     page     = 1,
         [FromQuery] int     pageSize = 20)
     {
-        var sql = @"
-            SELECT OV.ID_ORDEN_VENTA, OV.NUMERO_ORDEN_VENTA,
-                   OV.FECHA_SOLICITUD_ORDEN_VENTA, OV.FECHA_ENTREGA_ORDEN_VENTA,
-                   OV.SUBTOTAL_ORDEN_VENTA, OV.IMPUESTO_ORDEN_VENTA,
-                   OV.TOTAL_ORDEN_VENTA, OV.ESTADO_ORDEN_VENTA,
-                   C.RAZON_SOCIAL_CLIENTE
-            FROM   ORDEN_VENTA OV
-            LEFT JOIN CLIENTE C ON C.ID_CLIENTE = OV.ID_CLIENTE
-            WHERE  (:p_estado IS NULL OR OV.ESTADO_ORDEN_VENTA = :p_estado)
-            ORDER BY OV.FECHA_SOLICITUD_ORDEN_VENTA DESC
-            OFFSET :p_offset ROWS FETCH NEXT :p_size ROWS ONLY";
-
-        var dt = _db.ExecuteReader(sql, [
-            OracleHelper.P("p_estado", estado),
-            OracleHelper.PInt("p_offset", (page - 1) * pageSize),
-            OracleHelper.PInt("p_size",   pageSize),
-        ]);
+        // SELECT via VW_ORDENES_VENTA
+        var dt = _db.ExecuteReader(@"
+            SELECT *
+            FROM   VW_ORDENES_VENTA
+            WHERE  (:p_estado IS NULL OR ESTADO_ORDEN_VENTA = :p_estado)
+            ORDER BY FECHA_SOLICITUD_ORDEN_VENTA DESC
+            OFFSET :p_offset ROWS FETCH NEXT :p_size ROWS ONLY",
+            [
+                OracleHelper.P("p_estado", estado),
+                OracleHelper.PInt("p_offset", (page - 1) * pageSize),
+                OracleHelper.PInt("p_size",   pageSize),
+            ]);
         return OkList(dt);
     }
 
@@ -41,27 +36,16 @@ public class OrdenesVentaController : BaseController
     [HttpGet("{id:long}")]
     public IActionResult GetById(long id)
     {
-        var sqlHead = @"SELECT OV.*, C.RAZON_SOCIAL_CLIENTE, C.NIT_CLIENTE
-                        FROM   ORDEN_VENTA OV
-                        LEFT JOIN CLIENTE C ON C.ID_CLIENTE = OV.ID_CLIENTE
-                        WHERE  OV.ID_ORDEN_VENTA = :p_id";
-
-        var dtHead = _db.ExecuteReader(sqlHead, [OracleHelper.PInt("p_id", id)]);
+        // SELECT cabecera via VW_ORDENES_VENTA
+        var dtHead = _db.ExecuteReader(
+            "SELECT * FROM VW_ORDENES_VENTA WHERE ID_ORDEN_VENTA = :p_id",
+            [OracleHelper.PInt("p_id", id)]);
         if (dtHead.Rows.Count == 0) return NotFound();
 
-        var sqlDet = @"SELECT OVD.ID_ORDEN_VENTA_DETALLE,
-                              OVD.ID_ARTICULO,
-                              A.CODIGO_ARTICULO,
-                              A.NOMBRE_ARTICULO,
-                              OVD.CANTIDAD_SOLICITUD_VENTA_COMPRA_DETALLE   AS CANTIDAD,
-                              OVD.PRECIO_UNITARIO_ORDEN_VENTA_DETALLE      AS PRECIO_UNITARIO,
-                              OVD.SUBTOTAL_ORDEN_VENTA_DETALLE             AS SUBTOTAL,
-                              OVD.ESTADO_ORDEN_VENTA_DETALLE
-                       FROM   ORDEN_VENTA_DETALLE OVD
-                       JOIN   ARTICULO A ON A.ID_ARTICULO = OVD.ID_ARTICULO
-                       WHERE  OVD.ID_ORDEN_VENTA = :p_id";
-
-        var dtDet = _db.ExecuteReader(sqlDet, [OracleHelper.PInt("p_id", id)]);
+        // SELECT detalle via VW_ORDEN_VENTA_DETALLE
+        var dtDet = _db.ExecuteReader(
+            "SELECT * FROM VW_ORDEN_VENTA_DETALLE WHERE ID_ORDEN_VENTA = :p_id",
+            [OracleHelper.PInt("p_id", id)]);
 
         return Ok(new
         {
@@ -74,16 +58,17 @@ public class OrdenesVentaController : BaseController
     [HttpGet("cliente/{clienteId:long}")]
     public IActionResult GetByCliente(long clienteId)
     {
-        var sql = @"SELECT OV.ID_ORDEN_VENTA   AS ID,
-                           OV.NUMERO_ORDEN_VENTA AS NUMERO,
-                           OV.FECHA_SOLICITUD_ORDEN_VENTA AS FECHA,
-                           OV.TOTAL_ORDEN_VENTA  AS TOTAL,
-                           OV.ESTADO_ORDEN_VENTA AS ESTADO
-                    FROM   ORDEN_VENTA OV
-                    WHERE  OV.ID_CLIENTE = :p_cli
-                    ORDER BY OV.FECHA_SOLICITUD_ORDEN_VENTA DESC";
-
-        var dt = _db.ExecuteReader(sql, [OracleHelper.PInt("p_cli", clienteId)]);
+        // SELECT via VW_ORDENES_VENTA
+        var dt = _db.ExecuteReader(@"
+            SELECT ID_ORDEN_VENTA   AS ID,
+                   NUMERO_ORDEN_VENTA AS NUMERO,
+                   FECHA_SOLICITUD_ORDEN_VENTA AS FECHA,
+                   TOTAL_ORDEN_VENTA  AS TOTAL,
+                   ESTADO_ORDEN_VENTA AS ESTADO
+            FROM   VW_ORDENES_VENTA
+            WHERE  ID_CLIENTE = :p_cli
+            ORDER BY FECHA_SOLICITUD_ORDEN_VENTA DESC",
+            [OracleHelper.PInt("p_cli", clienteId)]);
         return OkList(dt);
     }
 
@@ -101,21 +86,10 @@ public class OrdenesVentaController : BaseController
             using var conn = _db.GetConnection();
             using var txn  = conn.BeginTransaction();
 
-            // 1) Insertar ORDEN_VENTA
-            var sqlOV = @"INSERT INTO ORDEN_VENTA
-                           (NUMERO_ORDEN_VENTA, FECHA_SOLICITUD_ORDEN_VENTA,
-                            FECHA_ENTREGA_ORDEN_VENTA,
-                            SUBTOTAL_ORDEN_VENTA, DESCUENTO_ORDEN_VENTA,
-                            IMPUESTO_ORDEN_VENTA, TOTAL_ORDEN_VENTA,
-                            ESTADO_ORDEN_VENTA, ID_CLIENTE, ID_USUARIO_CREA)
-                          VALUES
-                           (:p_num, SYSDATE, SYSDATE + 7,
-                            :p_sub, 0, :p_imp, :p_tot,
-                            'P', :p_cli, :p_ucrea)
-                          RETURNING ID_ORDEN_VENTA INTO :p_id_out";
-
+            // 1) INSERT ORDEN_VENTA via SP_OV_INS
             long idOV;
-            using (var cmd = new OracleCommand(sqlOV, conn) { Transaction = txn, BindByName = true })
+            using (var cmd = new OracleCommand("SP_OV_INS", conn)
+                { CommandType = System.Data.CommandType.StoredProcedure, Transaction = txn, BindByName = true })
             {
                 cmd.Parameters.Add(OracleHelper.P("p_num",   numOV));
                 cmd.Parameters.Add(OracleHelper.PDec("p_sub",  dto.Subtotal));
@@ -131,17 +105,9 @@ public class OrdenesVentaController : BaseController
             // 2) Detalle + descuento de stock por cada ítem
             foreach (var item in dto.Items)
             {
-                var sqlDet = @"INSERT INTO ORDEN_VENTA_DETALLE
-                               (CANTIDAD_SOLICITUD_VENTA_COMPRA_DETALLE,
-                                CANTIDAD_ENTREGADA_VENTA_COMPRA_DETALLE,
-                                PRECIO_UNITARIO_ORDEN_VENTA_DETALLE,
-                                SUBTOTAL_ORDEN_VENTA_DETALLE,
-                                ESTADO_ORDEN_VENTA_DETALLE,
-                                ID_ARTICULO, ID_ORDEN_VENTA)
-                              VALUES (:p_cant, 0, :p_precio,
-                                      :p_sub, 'P', :p_art, :p_ov)";
-
-                using var cmdD = new OracleCommand(sqlDet, conn) { Transaction = txn, BindByName = true };
+                // INSERT ORDEN_VENTA_DETALLE via SP_OV_DET_INS
+                using var cmdD = new OracleCommand("SP_OV_DET_INS", conn)
+                    { CommandType = System.Data.CommandType.StoredProcedure, Transaction = txn, BindByName = true };
                 cmdD.Parameters.Add(OracleHelper.PDec("p_cant",   item.Cantidad));
                 cmdD.Parameters.Add(OracleHelper.PDec("p_precio", item.PrecioUnitario));
                 cmdD.Parameters.Add(OracleHelper.PDec("p_sub",    item.Cantidad * item.PrecioUnitario));
@@ -149,12 +115,9 @@ public class OrdenesVentaController : BaseController
                 cmdD.Parameters.Add(OracleHelper.PInt("p_ov",     idOV));
                 cmdD.ExecuteNonQuery();
 
-                var sqlStk = @"UPDATE STOCK_ARTICULO
-                               SET CANTIDAD_DISPONIBLE_STOCK_ARTICULO =
-                                   CANTIDAD_DISPONIBLE_STOCK_ARTICULO - :p_cant
-                               WHERE ID_ARTICULO = :p_art";
-
-                using var cmdS = new OracleCommand(sqlStk, conn) { Transaction = txn, BindByName = true };
+                // UPDATE stock via SP_STOCK_DESCONTAR
+                using var cmdS = new OracleCommand("SP_STOCK_DESCONTAR", conn)
+                    { CommandType = System.Data.CommandType.StoredProcedure, Transaction = txn, BindByName = true };
                 cmdS.Parameters.Add(OracleHelper.PDec("p_cant", item.Cantidad));
                 cmdS.Parameters.Add(OracleHelper.PInt("p_art",  item.ArticuloId));
                 cmdS.ExecuteNonQuery();
@@ -178,22 +141,15 @@ public class OrdenesVentaController : BaseController
     [HttpPut("{id:long}")]
     public IActionResult Update(long id, [FromBody] OrdenVentaUpdateDto dto)
     {
-        _db.ExecuteNonQuery(
-            @"UPDATE ORDEN_VENTA SET
-                SUBTOTAL_ORDEN_VENTA = NVL(:p_sub, SUBTOTAL_ORDEN_VENTA),
-                IMPUESTO_ORDEN_VENTA = NVL(:p_imp, IMPUESTO_ORDEN_VENTA),
-                TOTAL_ORDEN_VENTA    = NVL(:p_tot, TOTAL_ORDEN_VENTA),
-                ESTADO_ORDEN_VENTA   = NVL(:p_est, ESTADO_ORDEN_VENTA),
-                ID_USUARIO_MODIFICA  = :p_umod
-              WHERE ID_ORDEN_VENTA = :p_id",
-            [
-                OracleHelper.PDec("p_sub",  dto.Subtotal),
-                OracleHelper.PDec("p_imp",  dto.Impuesto),
-                OracleHelper.PDec("p_tot",  dto.Total),
-                OracleHelper.P("p_est",     dto.Estado),
-                OracleHelper.PInt("p_umod", CurrentUserId),
-                OracleHelper.PInt("p_id",   id),
-            ]);
+        // UPDATE via SP_OV_UPD
+        _db.ExecuteNonQuery("SP_OV_UPD", [
+            OracleHelper.PDec("p_sub",  dto.Subtotal),
+            OracleHelper.PDec("p_imp",  dto.Impuesto),
+            OracleHelper.PDec("p_tot",  dto.Total),
+            OracleHelper.P("p_est",     dto.Estado),
+            OracleHelper.PInt("p_umod", CurrentUserId),
+            OracleHelper.PInt("p_id",   id),
+        ], isStoredProc: true);
         return Ok(new { message = "Orden de venta actualizada." });
     }
 }

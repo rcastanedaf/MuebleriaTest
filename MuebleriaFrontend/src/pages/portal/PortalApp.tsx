@@ -65,7 +65,7 @@ export function PortalApp({ showToast }: Props) {
   const [orderDetailError, setOrderDetailError] = useState<string | null>(null);
 
   const loadOrders = useCallback(async () => {
-    if (!user) {
+    if (!user || !user.idCliente) {
       setOrders([]);
       setOrdersError(null);
       return;
@@ -74,7 +74,7 @@ export function PortalApp({ showToast }: Props) {
     setOrdersLoading(true);
     setOrdersError(null);
     try {
-      const data = await checkoutRepository.getMyOrders(user.id);
+      const data = await checkoutRepository.getMyOrders(user.idCliente);
       setOrders(data);
     } catch (err: any) {
       setOrdersError(err?.message ?? "Error al cargar pedidos");

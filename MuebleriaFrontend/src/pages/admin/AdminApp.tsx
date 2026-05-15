@@ -14,8 +14,13 @@ import {
   bodegasRepo, sucursalesRepo, rolesRepo, cargosRepo, listaPreciosRepo,
   centrosTrabajoRepo, bomRepo, empresasRepo,
 } from "../../features/admin/data/adminRepository";
+import { PermisosMatrix } from "./PermisosMatrix";
 
-interface Props { showToast: (msg: string, type?: "success"|"error") => void; }
+interface Props {
+  showToast: (msg: string, type?: "success"|"error") => void;
+  allowedModules: string[] | null; // null = sin restricción
+  onLogout: () => void;
+}
 
 type Module =
   | "dashboard" | "empleados" | "nomina"
@@ -24,13 +29,14 @@ type Module =
   | "clientes" | "ordenesVenta"
   | "produccion"
   | "vehiculos" | "despachos"
-  | "usuarios" | "sucursales" | "roles";
+  | "usuarios" | "sucursales" | "roles" | "permisos";
 
 const MODULES: Array<{ key: Module; label: string; icon: string; group: string }> = [
   { key:"dashboard",    label:"Dashboard",      icon:"📊", group:"General" },
   { key:"sucursales",   label:"Sucursales",     icon:"🏢", group:"Config" },
   { key:"roles",        label:"Roles",          icon:"🔐", group:"Config" },
   { key:"usuarios",     label:"Usuarios",       icon:"👥", group:"Config" },
+  { key:"permisos",     label:"Permisos",       icon:"🛡️", group:"Config" },
   { key:"empleados",    label:"Empleados",      icon:"👤", group:"RRHH" },
   { key:"nomina",       label:"Nómina",         icon:"💰", group:"RRHH" },
   { key:"articulos",    label:"Artículos",      icon:"🪑", group:"Inventario" },
@@ -44,11 +50,15 @@ const MODULES: Array<{ key: Module; label: string; icon: string; group: string }
   { key:"despachos",    label:"Despachos",      icon:"📦", group:"Transporte" },
 ];
 
-export function AdminApp({ showToast }: Props) {
+export function AdminApp({ showToast, allowedModules, onLogout }: Props) {
   const [active, setActive] = useState<Module>("dashboard");
   const [sideOpen, setSideOpen] = useState(false);
 
-  const groups = [...new Set(MODULES.map(m => m.group))];
+  const visibleModules = allowedModules === null
+    ? MODULES
+    : MODULES.filter(m => m.key === "dashboard" || allowedModules.includes(m.key));
+
+  const groups = [...new Set(visibleModules.map(m => m.group))];
 
   return (
     <div style={{ display:"flex", minHeight:"100vh" }}>
@@ -76,7 +86,7 @@ export function AdminApp({ showToast }: Props) {
           <div key={group} style={{ padding:"12px 0 0" }}>
             <p style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase",
                         color:"rgba(255,255,255,0.3)", padding:"0 20px 6px" }}>{group}</p>
-            {MODULES.filter(m => m.group === group).map(m => (
+            {visibleModules.filter(m => m.group === group).map(m => (
               <button key={m.key} onClick={() => { setActive(m.key); setSideOpen(false); }} style={{
                 width:"100%", padding:"9px 20px", display:"flex", alignItems:"center", gap:10,
                 background: active===m.key ? "rgba(255,255,255,0.1)" : "transparent",
@@ -106,9 +116,13 @@ export function AdminApp({ showToast }: Props) {
             background:"none", border:"1px solid var(--sand)", borderRadius:"var(--radius)",
             padding:"6px 10px", cursor:"pointer", fontSize:16,
           }}>☰</button>
-          <h1 style={{ fontFamily:"Cormorant Garamond, serif", fontSize:18, fontWeight:400 }}>
+          <h1 style={{ fontFamily:"Cormorant Garamond, serif", fontSize:18, fontWeight:400, flex:1 }}>
             {MODULES.find(m => m.key === active)?.label ?? "Dashboard"}
           </h1>
+          <button onClick={onLogout} style={{
+            background:"none", border:"1px solid var(--sand)", borderRadius:"var(--radius)",
+            padding:"6px 12px", cursor:"pointer", fontSize:12, color:"var(--txtMuted)",
+          }}>Cerrar sesión</button>
         </header>
 
         <main style={{ padding:"20px 16px" }}>
@@ -124,9 +138,10 @@ export function AdminApp({ showToast }: Props) {
           {active === "produccion"  && <CrudTable repo={ordenesProducRepo} pk="idOrdenProduccion" title="Producción" columns={["codigoOrdenProduccion","nombreListaMateriales","cantidadPlanificadaOrdenProduccion","estadoOrdenProduccion"]} showToast={showToast} />}
           {active === "vehiculos"   && <CrudTable repo={vehiculosRepo}     pk="idVehiculo"    title="Vehículos"      columns={["placaVehiculo","marcaVehiculo","modeloVehiculo","tipoVehiculo","estadoVehiculo"]} showToast={showToast} />}
           {active === "despachos"   && <CrudTable repo={despachosRepo}     pk="idOrdenDespacho" title="Despachos"    columns={["nombreOrdenDespacho","fechaCreaOrdenDespacho","placaVehiculo","nombreTransportista","estadoOrdenDespachado"]} showToast={showToast} />}
-          {active === "usuarios"    && <CrudTable repo={usuariosRepo}      pk="idUsuario"     title="Usuarios"       columns={["usernameUsuario","emailUsuario","nombreRol","estadoUsuario","ultimoAccesoUsuario"]} showToast={showToast} />}
+          {active === "usuarios"    && <CrudTable repo={usuariosRepo}      pk="idUsuario"     title="Usuarios"       columns={["usernameUsuario","emailUsuario","passwordUsuario","nombreRol","nombreSucursal","estadoUsuario","ultimoAccesoUsuario"]} showToast={showToast} />}
           {active === "sucursales"  && <CrudTable repo={sucursalesRepo}    pk="idSucursal"    title="Sucursales"     columns={["codigoSucursal","nombreSucursal","emailSucursal","estadoSucursal","nombreEmpresa"]} showToast={showToast} />}
           {active === "roles"       && <CrudTable repo={rolesRepo}         pk="idRol"         title="Roles"          columns={["nombreRol","descripcionRol","rangoRol"]} showToast={showToast} />}
+          {active === "permisos"    && <PermisosMatrix showToast={showToast} />}
         </main>
       </div>
     </div>
@@ -618,6 +633,8 @@ function CrudTable<T extends Record<string,any>>({
   // Fields shown by name in the table but sent as ID to the backend
   const nameToIdField: Record<string, string> = {
     nombreEmpresa: "idEmpresa",
+    nombreRol: "idRol",
+    nombreSucursal: "idSucursal",
   };
 
   const convertFormData = (data: Record<string, string>): Partial<T> => {
@@ -904,7 +921,8 @@ function CrudTable<T extends Record<string,any>>({
                     label={colLabel(c)}
                     value={formData[c] ?? ""}
                     onChange={v => setField(c, v)}
-                    type={isNumeric ? "number" : "text"}
+                    type={isNumeric ? "number" : c.toLowerCase().includes("password") ? "password" : "text"}
+                    placeholder={c.toLowerCase().includes("password") && selected ? "Dejar vacío para no cambiar" : undefined}
                   />
                 )}
               </div>

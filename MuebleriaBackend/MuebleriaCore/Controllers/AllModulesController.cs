@@ -1,11 +1,9 @@
 // ============================================================
 // Todos los módulos CRUD restantes del DDL Oracle
-// Cada controller sigue el patrón:
-//   GET    /api/{resource}      → lista con filtros
-//   GET    /api/{resource}/{id} → detalle
-//   POST   /api/{resource}      → crear
-//   PUT    /api/{resource}/{id} → actualizar
-//   DELETE /api/{resource}/{id} → eliminar (lógico o validado)
+// SELECTs  → vistas  VW_<ENTIDAD>
+// INSERTs  → procedimientos SP_<ENT>_INS
+// UPDATEs  → procedimientos SP_<ENT>_UPD
+// DELETEs  → procedimientos SP_<ENT>_DEL
 // ============================================================
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,33 +18,36 @@ namespace MuebleriaCore.Controllers;
 public class EmpresasController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT * FROM EMPRESAS ORDER BY NOMBRE_EMPRESA"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_EMPRESAS ORDER BY NOMBRE_EMPRESA"));
 
     [HttpGet("{id:long}")] public IActionResult GetById(long id)
     {
-        var dt = _db.ExecuteReader("SELECT * FROM EMPRESAS WHERE ID_EMPRESA=:p", [OracleHelper.PInt("p", id)]);
+        var dt = _db.ExecuteReader("SELECT * FROM VW_EMPRESAS WHERE ID_EMPRESA = :p", [OracleHelper.PInt("p", id)]);
         return dt.Rows.Count == 0 ? NotFound() : Ok(OracleHelper.ToList(dt)[0]);
     }
 
     [HttpPost] public IActionResult Create([FromBody] EmpresaDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO EMPRESAS(NOMBRE_EMPRESA,NIT_EMPRESA,RAZON_SOCIAL_EMPRESA,DIRECCION_EMPRESA,LOGO_EMPRESA,ESTADO_EMPRESA)
-                                    VALUES(:nm,:nit,:rs,:dir,:logo,NVL(:est,'A')) RETURNING ID_EMPRESA INTO :p_id_out",
-            [OracleHelper.P("nm",d.NombreEmpresa),OracleHelper.P("nit",d.NitEmpresa),OracleHelper.P("rs",d.RazonSocialEmpresa),
-             OracleHelper.P("dir",d.DireccionEmpresa),OracleHelper.P("logo",d.LogoEmpresa),OracleHelper.P("est",d.EstadoEmpresa),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_EMP_INS",
+            [OracleHelper.P("p_nm",d.NombreEmpresa), OracleHelper.P("p_nit",d.NitEmpresa),
+             OracleHelper.P("p_rs",d.RazonSocialEmpresa), OracleHelper.P("p_dir",d.DireccionEmpresa),
+             OracleHelper.P("p_logo",d.LogoEmpresa), OracleHelper.P("p_est",d.EstadoEmpresa),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/empresas/{id}", new { idEmpresa = id });
     }
 
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] EmpresaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE EMPRESAS SET NOMBRE_EMPRESA=NVL(:nm,NOMBRE_EMPRESA),DIRECCION_EMPRESA=NVL(:dir,DIRECCION_EMPRESA),ESTADO_EMPRESA=NVL(:est,ESTADO_EMPRESA) WHERE ID_EMPRESA=:p",
-            [OracleHelper.P("nm",d.NombreEmpresa),OracleHelper.P("dir",d.DireccionEmpresa),OracleHelper.P("est",d.EstadoEmpresa),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_EMP_UPD",
+            [OracleHelper.P("p_nm",d.NombreEmpresa), OracleHelper.P("p_dir",d.DireccionEmpresa),
+             OracleHelper.P("p_est",d.EstadoEmpresa), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
         return Ok(new { message = "OK" });
     }
 
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE EMPRESAS SET ESTADO_EMPRESA='I' WHERE ID_EMPRESA=:p", [OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_EMP_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
         return Ok();
     }
 }
@@ -57,34 +58,36 @@ public record EmpresaDto(string? NombreEmpresa, string? NitEmpresa, string? Razo
 public class SucursalesController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT S.*,E.NOMBRE_EMPRESA FROM SUCURSALES S JOIN EMPRESAS E ON E.ID_EMPRESA=S.ID_EMPRESA ORDER BY S.NOMBRE_SUCURSAL"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_SUCURSALES ORDER BY NOMBRE_SUCURSAL"));
 
     [HttpGet("{id:long}")] public IActionResult GetById(long id)
     {
-        var dt = _db.ExecuteReader("SELECT * FROM SUCURSALES WHERE ID_SUCURSAL=:p", [OracleHelper.PInt("p",id)]);
+        var dt = _db.ExecuteReader("SELECT * FROM VW_SUCURSALES WHERE ID_SUCURSAL = :p", [OracleHelper.PInt("p", id)]);
         return dt.Rows.Count == 0 ? NotFound() : Ok(OracleHelper.ToList(dt)[0]);
     }
 
     [HttpPost] public IActionResult Create([FromBody] SucursalDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO SUCURSALES(CODIGO_SUCURSAL,NOMBRE_SUCURSAL,DIRECCION_SUCURSAL,EMAIL_SUCURSAL,ESTADO_SUCURSAL,ID_EMPRESA,ID_MUNICIPIO)
-                                    VALUES(:c,:n,:dir,:e,NVL(:est,'A'),:emp,:mun) RETURNING ID_SUCURSAL INTO :p_id_out",
-            [OracleHelper.P("c",d.CodigoSucursal),OracleHelper.P("n",d.NombreSucursal),OracleHelper.P("dir",d.DireccionSucursal),
-             OracleHelper.P("e",d.EmailSucursal),OracleHelper.P("est",d.EstadoSucursal),OracleHelper.PInt("emp",d.IdEmpresa),
-             OracleHelper.PInt("mun",d.IdMunicipio),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_SUC_INS",
+            [OracleHelper.P("p_c",d.CodigoSucursal), OracleHelper.P("p_n",d.NombreSucursal),
+             OracleHelper.P("p_dir",d.DireccionSucursal), OracleHelper.P("p_e",d.EmailSucursal),
+             OracleHelper.P("p_est",d.EstadoSucursal), OracleHelper.PInt("p_emp",d.IdEmpresa),
+             OracleHelper.PInt("p_mun",d.IdMunicipio), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/sucursales/{id}", new { idSucursal = id });
     }
 
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] SucursalDto d)
     {
-        _db.ExecuteNonQuery("UPDATE SUCURSALES SET NOMBRE_SUCURSAL=NVL(:n,NOMBRE_SUCURSAL),ESTADO_SUCURSAL=NVL(:est,ESTADO_SUCURSAL) WHERE ID_SUCURSAL=:p",
-            [OracleHelper.P("n",d.NombreSucursal),OracleHelper.P("est",d.EstadoSucursal),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_SUC_UPD",
+            [OracleHelper.P("p_n",d.NombreSucursal), OracleHelper.P("p_est",d.EstadoSucursal),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
         return Ok();
     }
 
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE SUCURSALES SET ESTADO_SUCURSAL='I' WHERE ID_SUCURSAL=:p", [OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_SUC_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
         return Ok();
     }
 }
@@ -94,22 +97,33 @@ public record SucursalDto(string? CodigoSucursal, string? NombreSucursal, string
 [Route("api/roles")]
 public class RolesController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM ROLES ORDER BY RANGO_ROL"));
+    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM VW_ROLES ORDER BY RANGO_ROL"));
+
     [HttpPost] public IActionResult Create([FromBody] RolDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO ROLES(NOMBRE_ROL,DESCRIPCION_ROL,RANGO_ROL) VALUES(:n,:d,:r) RETURNING ID_ROL INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreRol),OracleHelper.P("d",d.DescripcionRol),OracleHelper.PInt("r",d.RangoRol),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_ROL_INS",
+            [OracleHelper.P("p_n",d.NombreRol), OracleHelper.P("p_d",d.DescripcionRol),
+             OracleHelper.PInt("p_r",d.RangoRol), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/roles/{id}", new { idRol = id });
     }
+
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] RolDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ROLES SET NOMBRE_ROL=NVL(:n,NOMBRE_ROL),DESCRIPCION_ROL=NVL(:d,DESCRIPCION_ROL),RANGO_ROL=NVL(:r,RANGO_ROL) WHERE ID_ROL=:p",
-            [OracleHelper.P("n",d.NombreRol),OracleHelper.P("d",d.DescripcionRol),OracleHelper.PInt("r",d.RangoRol),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_ROL_UPD",
+            [OracleHelper.P("p_n",d.NombreRol), OracleHelper.P("p_d",d.DescripcionRol),
+             OracleHelper.PInt("p_r",d.RangoRol), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
         return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try { _db.ExecuteNonQuery("DELETE FROM ROLES WHERE ID_ROL=:p", [OracleHelper.PInt("p",id)]); return Ok(); }
+        try
+        {
+            _db.ExecuteNonQuery("SP_ROL_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
         catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
@@ -120,39 +134,43 @@ public record RolDto(string? NombreRol, string? DescripcionRol, long? RangoRol);
 public class UsuariosController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT U.ID_USUARIO,U.USERNAME_USUARIO,U.EMAIL_USUARIO,U.ESTADO_USUARIO,U.ULTIMO_ACCESO_USUARIO,R.NOMBRE_ROL,S.NOMBRE_SUCURSAL FROM USUARIOS U JOIN ROLES R ON R.ID_ROL=U.ID_ROL JOIN SUCURSALES S ON S.ID_SUCURSAL=U.ID_SUCURSAL ORDER BY U.USERNAME_USUARIO"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_USUARIOS ORDER BY USERNAME_USUARIO"));
+
     [HttpPost] public IActionResult Create([FromBody] UsuarioDto d)
     {
         try
         {
-            var id = _db.ExecuteInsert(@"INSERT INTO USUARIOS(USERNAME_USUARIO,PASSWORD_USUARIO,EMAIL_USUARIO,ESTADO_USUARIO,ID_ROL,ID_SUCURSAL)
-                                        VALUES(:u,:p,:e,NVL(:est,'A'),:r,:s) RETURNING ID_USUARIO INTO :p_id_out",
-                [OracleHelper.P("u",d.UsernameUsuario),OracleHelper.P("p",BCrypt.Net.BCrypt.HashPassword(d.PasswordUsuario??"temp",12)),
-                 OracleHelper.P("e",d.EmailUsuario),OracleHelper.P("est",d.EstadoUsuario),OracleHelper.PInt("r",d.IdRol),
-                 OracleHelper.PInt("s",d.IdSucursal),OracleHelper.POut("p_id_out")]);
+            var id = _db.ExecuteInsert("SP_USR_INS",
+                [OracleHelper.P("p_u",d.UsernameUsuario),
+                 OracleHelper.P("p_p", BCrypt.Net.BCrypt.HashPassword(d.PasswordUsuario ?? "temp", 12)),
+                 OracleHelper.P("p_e",d.EmailUsuario), OracleHelper.P("p_est",d.EstadoUsuario),
+                 OracleHelper.PInt("p_r",d.IdRol), OracleHelper.PInt("p_s",d.IdSucursal),
+                 OracleHelper.POut("p_id_out")], isStoredProc: true);
             return Created($"api/usuarios/{id}", new { idUsuario = id });
         }
         catch (OracleException ex) { return HandleOracleError(ex); }
     }
+
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] UsuarioDto d)
     {
         try
         {
             var hashedPwd = string.IsNullOrEmpty(d.PasswordUsuario) ? null
                 : BCrypt.Net.BCrypt.HashPassword(d.PasswordUsuario, 12);
-            _db.ExecuteNonQuery(
-                "UPDATE USUARIOS SET EMAIL_USUARIO=NVL(:e,EMAIL_USUARIO),ESTADO_USUARIO=NVL(:est,ESTADO_USUARIO),ID_ROL=NVL(:r,ID_ROL),PASSWORD_USUARIO=NVL(:p,PASSWORD_USUARIO) WHERE ID_USUARIO=:id",
-                [OracleHelper.P("e",d.EmailUsuario),OracleHelper.P("est",d.EstadoUsuario),
-                 OracleHelper.PInt("r",d.IdRol),OracleHelper.P("p",hashedPwd),OracleHelper.PInt("id",id)]);
+            _db.ExecuteNonQuery("SP_USR_UPD",
+                [OracleHelper.P("p_e",d.EmailUsuario), OracleHelper.P("p_est",d.EstadoUsuario),
+                 OracleHelper.PInt("p_r",d.IdRol), OracleHelper.P("p_p",hashedPwd),
+                 OracleHelper.PInt("p_id",id)], isStoredProc: true);
             return Ok();
         }
         catch (OracleException ex) { return HandleOracleError(ex); }
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
         try
         {
-            _db.ExecuteNonQuery("UPDATE USUARIOS SET ESTADO_USUARIO='I' WHERE ID_USUARIO=:p", [OracleHelper.PInt("p",id)]);
+            _db.ExecuteNonQuery("SP_USR_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
             return Ok();
         }
         catch (OracleException ex) { return HandleOracleError(ex); }
@@ -165,35 +183,32 @@ public record UsuarioDto(string? UsernameUsuario, string? PasswordUsuario, strin
 public class PermisosController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT P.*,R.NOMBRE_ROL FROM PERMISOS P JOIN ROLES R ON R.ID_ROL=P.ID_ROL ORDER BY P.MODULO_PERMISO"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_PERMISOS ORDER BY MODULO_PERMISO"));
 
-    // Returns one row per (role × module) combination; idPermiso is null if not yet granted
-    [HttpGet("matriz")] public IActionResult GetMatriz()
-    {
-        var sql = @"SELECT R.ID_ROL, R.NOMBRE_ROL, R.RANGO_ROL,
-                           P.ID_PERMISO, P.MODULO_PERMISO
-                    FROM   ROLES R
-                    LEFT JOIN PERMISOS P ON P.ID_ROL = R.ID_ROL
-                    WHERE  LOWER(R.NOMBRE_ROL) NOT IN ('admin','cliente')
-                    ORDER BY R.RANGO_ROL, P.MODULO_PERMISO";
-        return OkList(_db.ExecuteReader(sql));
-    }
+    [HttpGet("matriz")] public IActionResult GetMatriz() =>
+        OkList(_db.ExecuteReader("SELECT * FROM VW_PERMISOS_MATRIZ ORDER BY RANGO_ROL, MODULO_PERMISO"));
 
     [HttpPost] public IActionResult Create([FromBody] PermisoDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO PERMISOS(NOMBRE_PERMISO,DESCRIPCION_PERMISO,MODULO_PERMISO,ESTADO,ID_ROL) VALUES(:n,:d,:m,NVL(:est,'A'),:r) RETURNING ID_PERMISO INTO :p_id_out",
-            [OracleHelper.P("n",d.NombrePermiso),OracleHelper.P("d",d.DescripcionPermiso),OracleHelper.P("m",d.ModuloPermiso),OracleHelper.P("est",d.Estado),OracleHelper.PInt("r",d.IdRol),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_PERM_INS",
+            [OracleHelper.P("p_n",d.NombrePermiso), OracleHelper.P("p_d",d.DescripcionPermiso),
+             OracleHelper.P("p_m",d.ModuloPermiso), OracleHelper.P("p_est",d.Estado),
+             OracleHelper.PInt("p_r",d.IdRol), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/permisos/{id}", new { idPermiso = id });
     }
+
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] PermisoDto d)
     {
-        _db.ExecuteNonQuery("UPDATE PERMISOS SET ESTADO=NVL(:est,ESTADO),MODULO_PERMISO=NVL(:m,MODULO_PERMISO) WHERE ID_PERMISO=:p",
-            [OracleHelper.P("est",d.Estado),OracleHelper.P("m",d.ModuloPermiso),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_PERM_UPD",
+            [OracleHelper.P("p_est",d.Estado), OracleHelper.P("p_m",d.ModuloPermiso),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
         return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("DELETE FROM PERMISOS WHERE ID_PERMISO=:p_id", [OracleHelper.PInt("p_id",id)]);
+        _db.ExecuteNonQuery("SP_PERM_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
         return NoContent();
     }
 }
@@ -203,21 +218,32 @@ public record PermisoDto(string? NombrePermiso, string? DescripcionPermiso, stri
 [Route("api/monedas")]
 public class MonedasController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM MONEDAS ORDER BY CODIGO_MONEDA"));
+    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM VW_MONEDAS ORDER BY CODIGO_MONEDA"));
+
     [HttpPost] public IActionResult Create([FromBody] MonedaDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO MONEDAS(CODIGO_MONEDA,NOMBRE_MONEDA,SIMBOLO_MONEDA,DECIMALES_MONEDA) VALUES(:c,:n,:s,NVL(:d,2)) RETURNING ID_MONEDA INTO :p_id_out",
-            [OracleHelper.P("c",d.CodigoMoneda),OracleHelper.P("n",d.NombreMoneda),OracleHelper.P("s",d.SimboloMoneda),OracleHelper.PInt("d",d.DecimalesMoneda),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_MON_INS",
+            [OracleHelper.P("p_c",d.CodigoMoneda), OracleHelper.P("p_n",d.NombreMoneda),
+             OracleHelper.P("p_s",d.SimboloMoneda), OracleHelper.PInt("p_d",d.DecimalesMoneda),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/monedas/{id}", new { idMoneda = id });
     }
+
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] MonedaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE MONEDAS SET NOMBRE_MONEDA=NVL(:n,NOMBRE_MONEDA) WHERE ID_MONEDA=:p", [OracleHelper.P("n",d.NombreMoneda),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_MON_UPD",
+            [OracleHelper.P("p_n",d.NombreMoneda), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
         return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try { _db.ExecuteNonQuery("DELETE FROM MONEDAS WHERE ID_MONEDA=:p", [OracleHelper.PInt("p",id)]); return Ok(); }
+        try
+        {
+            _db.ExecuteNonQuery("SP_MON_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
         catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
@@ -227,22 +253,32 @@ public record MonedaDto(string? CodigoMoneda, string? NombreMoneda, string? Simb
 [Route("api/departamentos")]
 public class DepartamentosController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM DEPARTAMENTO ORDER BY NOMBRE_DEPARTAMENTO"));
+    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM VW_DEPARTAMENTOS ORDER BY NOMBRE_DEPARTAMENTO"));
+
     [HttpPost] public IActionResult Create([FromBody] DeptDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO DEPARTAMENTO(NOMBRE_DEPARTAMENTO,FRECUENCIA_DEPARTAMENTO,ZONA_TERRITORIAL_DEPARTAMENTO) VALUES(:n,:f,:z) RETURNING ID_DEPARTAMENTO INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreDepartamento),OracleHelper.P("f",d.FrecuenciaDepartamento),OracleHelper.P("z",d.ZonaTerritorialDepartamento),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_DEPT_INS",
+            [OracleHelper.P("p_n",d.NombreDepartamento), OracleHelper.P("p_f",d.FrecuenciaDepartamento),
+             OracleHelper.P("p_z",d.ZonaTerritorialDepartamento), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/departamentos/{id}", new { id });
     }
+
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] DeptDto d)
     {
-        _db.ExecuteNonQuery("UPDATE DEPARTAMENTO SET NOMBRE_DEPARTAMENTO=NVL(:n,NOMBRE_DEPARTAMENTO) WHERE ID_DEPARTAMENTO=:p",
-            [OracleHelper.P("n",d.NombreDepartamento),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_DEPT_UPD",
+            [OracleHelper.P("p_n",d.NombreDepartamento), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
         return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try { _db.ExecuteNonQuery("DELETE FROM DEPARTAMENTO WHERE ID_DEPARTAMENTO=:p", [OracleHelper.PInt("p",id)]); return Ok(); }
+        try
+        {
+            _db.ExecuteNonQuery("SP_DEPT_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
         catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
@@ -255,21 +291,29 @@ public class MunicipiosController(OracleHelper db) : BaseController(db)
     [HttpGet]
     public IActionResult GetAll([FromQuery] int? idDepartamento = null)
     {
-        var sql = "SELECT M.*,D.NOMBRE_DEPARTAMENTO FROM MUNICIPIOS M JOIN DEPARTAMENTO D ON D.ID_DEPARTAMENTO=M.ID_DEPARTAMENTO"
-                + (idDepartamento.HasValue ? " WHERE M.ID_DEPARTAMENTO=:p" : "")
-                + " ORDER BY M.NOMBRE_MUNICIPIO";
-        OracleParameter[]? p = idDepartamento.HasValue ? [OracleHelper.PInt("p", idDepartamento)] : Array.Empty<OracleParameter>();
-        return OkList(_db.ExecuteReader(sql, idDepartamento.HasValue ? p : null));
+        var sql = "SELECT * FROM VW_MUNICIPIOS"
+                + (idDepartamento.HasValue ? " WHERE ID_DEPARTAMENTO = :p" : "")
+                + " ORDER BY NOMBRE_MUNICIPIO";
+        return OkList(_db.ExecuteReader(sql,
+            idDepartamento.HasValue ? [OracleHelper.PInt("p", idDepartamento)] : null));
     }
+
     [HttpPost] public IActionResult Create([FromBody] MunicipioDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO MUNICIPIOS(NOMBRE_MUNICIPIO,CODIGO_POSTAL_MUNICIPIO,ID_DEPARTAMENTO) VALUES(:n,:cp,:dep) RETURNING ID_MUNICIPIO INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreMunicipio),OracleHelper.P("cp",d.CodigoPostalMunicipio),OracleHelper.PInt("dep",d.IdDepartamento),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_MUN_INS",
+            [OracleHelper.P("p_n",d.NombreMunicipio), OracleHelper.P("p_cp",d.CodigoPostalMunicipio),
+             OracleHelper.PInt("p_dep",d.IdDepartamento), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/municipios/{id}", new { id });
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try { _db.ExecuteNonQuery("DELETE FROM MUNICIPIOS WHERE ID_MUNICIPIO=:p", [OracleHelper.PInt("p",id)]); return Ok(); }
+        try
+        {
+            _db.ExecuteNonQuery("SP_MUN_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
         catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
@@ -280,44 +324,48 @@ public record MunicipioDto(string? NombreMunicipio, string? CodigoPostalMunicipi
 [Route("api/empleados")]
 public class EmpleadosController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll([FromQuery] string? search=null, [FromQuery] string? estado=null)
+    [HttpGet] public IActionResult GetAll([FromQuery] string? search = null, [FromQuery] string? estado = null)
     {
-        var sql = @"SELECT E.*,C.NOMBRE_CARGO_RRHH,D.NOMBRE_DEPARTAMENTO_RRHH
-                    FROM EMPLEADOS E
-                    LEFT JOIN CARGO_RRHH C ON C.ID_CARGO_RRHH=E.ID_CARGO
-                    LEFT JOIN DEPARTAMENTO_RRHH D ON D.ID_DEPARTAMENTO_RRHH=C.ID_DEPARTAMENTO_RRHH
-                    WHERE (:p_est IS NULL OR E.ESTADO_EMPLEADO=:p_est)
-                      AND (:p_s IS NULL OR UPPER(E.NOMBRES_EMPLEADO) LIKE UPPER(:p_s)
-                           OR UPPER(E.APELLIDOS_EMPLEADO) LIKE UPPER(:p_s)
-                           OR E.NUMERO_EMPLEADO LIKE :p_s)
-                    ORDER BY E.APELLIDOS_EMPLEADO";
+        var sql = @"SELECT * FROM VW_EMPLEADOS
+                    WHERE (:p_est IS NULL OR ESTADO_EMPLEADO = :p_est)
+                      AND (:p_s IS NULL OR UPPER(NOMBRES_EMPLEADO) LIKE UPPER(:p_s)
+                           OR UPPER(APELLIDOS_EMPLEADO) LIKE UPPER(:p_s)
+                           OR NUMERO_EMPLEADO LIKE :p_s)
+                    ORDER BY APELLIDOS_EMPLEADO";
         var q = search is null ? null : $"%{search}%";
-        return OkList(_db.ExecuteReader(sql, [OracleHelper.P("p_est",estado),OracleHelper.P("p_s",q)]));
+        return OkList(_db.ExecuteReader(sql, [OracleHelper.P("p_est", estado), OracleHelper.P("p_s", q)]));
     }
+
     [HttpGet("{id:long}")] public IActionResult GetById(long id)
     {
-        var dt = _db.ExecuteReader("SELECT E.*,C.NOMBRE_CARGO_RRHH FROM EMPLEADOS E LEFT JOIN CARGO_RRHH C ON C.ID_CARGO_RRHH=E.ID_CARGO WHERE E.ID_EMPLEADO=:p",[OracleHelper.PInt("p",id)]);
-        return dt.Rows.Count==0?NotFound():Ok(OracleHelper.ToList(dt)[0]);
+        var dt = _db.ExecuteReader("SELECT * FROM VW_EMPLEADOS WHERE ID_EMPLEADO = :p", [OracleHelper.PInt("p", id)]);
+        return dt.Rows.Count == 0 ? NotFound() : Ok(OracleHelper.ToList(dt)[0]);
     }
+
     [HttpPost] public IActionResult Create([FromBody] EmpleadoDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO EMPLEADOS(NUMERO_EMPLEADO,DPI_EMPLEADO,NOMBRES_EMPLEADO,APELLIDOS_EMPLEADO,FECHA_NACIMIENTO_EMPLEADO,GENERO_EMPLEADO,EMAIL_COORPORARIVO_EMPLEADO,FECHA_INGRESO_EMPLEADO,ESTADO_EMPLEADO,ID_CARGO)
-                                    VALUES(:num,:dpi,:nom,:ape,TO_DATE(:fn,'YYYY-MM-DD'),:gen,:email,TO_DATE(:fi,'YYYY-MM-DD'),NVL(:est,'A'),:cargo) RETURNING ID_EMPLEADO INTO :p_id_out",
-            [OracleHelper.P("num",d.NumeroEmpleado),OracleHelper.P("dpi",d.DpiEmpleado),OracleHelper.P("nom",d.NombresEmpleado),
-             OracleHelper.P("ape",d.ApellidosEmpleado),OracleHelper.P("fn",d.FechaNacimientoEmpleado),OracleHelper.P("gen",d.GeneroEmpleado),
-             OracleHelper.P("email",d.EmailCorporativoEmpleado),OracleHelper.P("fi",d.FechaIngresoEmpleado),
-             OracleHelper.P("est",d.EstadoEmpleado),OracleHelper.PInt("cargo",d.IdCargo),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_EMPL_INS",
+            [OracleHelper.P("p_num",d.NumeroEmpleado), OracleHelper.P("p_dpi",d.DpiEmpleado),
+             OracleHelper.P("p_nom",d.NombresEmpleado), OracleHelper.P("p_ape",d.ApellidosEmpleado),
+             OracleHelper.P("p_fn",d.FechaNacimientoEmpleado), OracleHelper.P("p_gen",d.GeneroEmpleado),
+             OracleHelper.P("p_email",d.EmailCorporativoEmpleado), OracleHelper.P("p_fi",d.FechaIngresoEmpleado),
+             OracleHelper.P("p_est",d.EstadoEmpleado), OracleHelper.PInt("p_cargo",d.IdCargo),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/empleados/{id}", new { idEmpleado = id });
     }
+
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] EmpleadoDto d)
     {
-        _db.ExecuteNonQuery("UPDATE EMPLEADOS SET NOMBRES_EMPLEADO=NVL(:nom,NOMBRES_EMPLEADO),APELLIDOS_EMPLEADO=NVL(:ape,APELLIDOS_EMPLEADO),ESTADO_EMPLEADO=NVL(:est,ESTADO_EMPLEADO),ID_CARGO=NVL(:cargo,ID_CARGO) WHERE ID_EMPLEADO=:p",
-            [OracleHelper.P("nom",d.NombresEmpleado),OracleHelper.P("ape",d.ApellidosEmpleado),OracleHelper.P("est",d.EstadoEmpleado),OracleHelper.PInt("cargo",d.IdCargo),OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_EMPL_UPD",
+            [OracleHelper.P("p_nom",d.NombresEmpleado), OracleHelper.P("p_ape",d.ApellidosEmpleado),
+             OracleHelper.P("p_est",d.EstadoEmpleado), OracleHelper.PInt("p_cargo",d.IdCargo),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
         return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE EMPLEADOS SET ESTADO_EMPLEADO='I' WHERE ID_EMPLEADO=:p",[OracleHelper.PInt("p",id)]);
+        _db.ExecuteNonQuery("SP_EMPL_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
         return Ok();
     }
 }
@@ -328,21 +376,33 @@ public record EmpleadoDto(string? NumeroEmpleado, string? DpiEmpleado, string? N
 public class DepartamentosRRHHController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT D.*,S.NOMBRE_SUCURSAL FROM DEPARTAMENTO_RRHH D JOIN SUCURSALES S ON S.ID_SUCURSAL=D.ID_SUCURSAL ORDER BY D.NOMBRE_DEPARTAMENTO_RRHH"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_DEPARTAMENTOS_RRHH ORDER BY NOMBRE_DEPARTAMENTO_RRHH"));
+
     [HttpPost] public IActionResult Create([FromBody] DeptRRHHDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO DEPARTAMENTO_RRHH(NOMBRE_DEPARTAMENTO_RRHH,CODIGO_DEPARTAMENTO_RRHH,ID_SUCURSAL,ID_DEPARTAMENTO_RRHH_PADRE) VALUES(:n,:c,:s,:padre) RETURNING ID_DEPARTAMENTO_RRHH INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreDepartamentoRRHH),OracleHelper.P("c",d.CodigoDepartamentoRRHH),OracleHelper.PInt("s",d.IdSucursal),OracleHelper.PInt("padre",d.IdDepartamentoRRHHPadre),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_DEPRRHH_INS",
+            [OracleHelper.P("p_n",d.NombreDepartamentoRRHH), OracleHelper.P("p_c",d.CodigoDepartamentoRRHH),
+             OracleHelper.PInt("p_s",d.IdSucursal), OracleHelper.PInt("p_padre",d.IdDepartamentoRRHHPadre),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/departamentos-rrhh/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] DeptRRHHDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] DeptRRHHDto d)
     {
-        _db.ExecuteNonQuery("UPDATE DEPARTAMENTO_RRHH SET NOMBRE_DEPARTAMENTO_RRHH=NVL(:n,NOMBRE_DEPARTAMENTO_RRHH) WHERE ID_DEPARTAMENTO_RRHH=:p",[OracleHelper.P("n",d.NombreDepartamentoRRHH),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_DEPRRHH_UPD",
+            [OracleHelper.P("p_n",d.NombreDepartamentoRRHH), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try{_db.ExecuteNonQuery("DELETE FROM DEPARTAMENTO_RRHH WHERE ID_DEPARTAMENTO_RRHH=:p",[OracleHelper.PInt("p",id)]);return Ok();}
-        catch(OracleException ex){return HandleOracleError(ex);}
+        try
+        {
+            _db.ExecuteNonQuery("SP_DEPRRHH_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
 public record DeptRRHHDto(string? NombreDepartamentoRRHH, string? CodigoDepartamentoRRHH, long? IdSucursal, long? IdDepartamentoRRHHPadre);
@@ -352,22 +412,35 @@ public record DeptRRHHDto(string? NombreDepartamentoRRHH, string? CodigoDepartam
 public class CargosRRHHController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT C.*,D.NOMBRE_DEPARTAMENTO_RRHH FROM CARGO_RRHH C JOIN DEPARTAMENTO_RRHH D ON D.ID_DEPARTAMENTO_RRHH=C.ID_DEPARTAMENTO_RRHH ORDER BY C.NOMBRE_CARGO_RRHH"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_CARGOS_RRHH ORDER BY NOMBRE_CARGO_RRHH"));
+
     [HttpPost] public IActionResult Create([FromBody] CargoDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO CARGO_RRHH(NOMBRE_CARGO_RRHH,NIVEL_CARGO_RRHH,SALARIO_MIN_CARGO_RRHH,SALARIO_MAX_CARGO_RRHH,ID_DEPARTAMENTO_RRHH) VALUES(:n,:niv,:smin,:smax,:dep) RETURNING ID_CARGO_RRHH INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreCargoRRHH),OracleHelper.P("niv",d.NivelCargoRRHH),OracleHelper.PDec("smin",d.SalarioMinCargoRRHH),OracleHelper.PDec("smax",d.SalarioMaxCargoRRHH),OracleHelper.PInt("dep",d.IdDepartamentoRRHH),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_CARRRHH_INS",
+            [OracleHelper.P("p_n",d.NombreCargoRRHH), OracleHelper.P("p_niv",d.NivelCargoRRHH),
+             OracleHelper.PDec("p_smin",d.SalarioMinCargoRRHH), OracleHelper.PDec("p_smax",d.SalarioMaxCargoRRHH),
+             OracleHelper.PInt("p_dep",d.IdDepartamentoRRHH), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/cargos-rrhh/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] CargoDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] CargoDto d)
     {
-        _db.ExecuteNonQuery("UPDATE CARGO_RRHH SET NOMBRE_CARGO_RRHH=NVL(:n,NOMBRE_CARGO_RRHH),NIVEL_CARGO_RRHH=NVL(:niv,NIVEL_CARGO_RRHH),SALARIO_MIN_CARGO_RRHH=NVL(:smin,SALARIO_MIN_CARGO_RRHH),SALARIO_MAX_CARGO_RRHH=NVL(:smax,SALARIO_MAX_CARGO_RRHH) WHERE ID_CARGO_RRHH=:p",
-            [OracleHelper.P("n",d.NombreCargoRRHH),OracleHelper.P("niv",d.NivelCargoRRHH),OracleHelper.PDec("smin",d.SalarioMinCargoRRHH),OracleHelper.PDec("smax",d.SalarioMaxCargoRRHH),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_CARRRHH_UPD",
+            [OracleHelper.P("p_n",d.NombreCargoRRHH), OracleHelper.P("p_niv",d.NivelCargoRRHH),
+             OracleHelper.PDec("p_smin",d.SalarioMinCargoRRHH), OracleHelper.PDec("p_smax",d.SalarioMaxCargoRRHH),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try{_db.ExecuteNonQuery("DELETE FROM CARGO_RRHH WHERE ID_CARGO_RRHH=:p",[OracleHelper.PInt("p",id)]);return Ok();}
-        catch(OracleException ex){return HandleOracleError(ex);}
+        try
+        {
+            _db.ExecuteNonQuery("SP_CARRRHH_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
 public record CargoDto(string? NombreCargoRRHH, string? NivelCargoRRHH, decimal? SalarioMinCargoRRHH, decimal? SalarioMaxCargoRRHH, long? IdDepartamentoRRHH);
@@ -376,22 +449,35 @@ public record CargoDto(string? NombreCargoRRHH, string? NivelCargoRRHH, decimal?
 [Route("api/jornadas")]
 public class JornadasController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM JORNADAS ORDER BY NOMBRE_JORNADA"));
+    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM VW_JORNADAS ORDER BY NOMBRE_JORNADA"));
+
     [HttpPost] public IActionResult Create([FromBody] JornadaDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO JORNADAS(NOMBRE_JORNADA,CODIGO_JORNADA,HORA_IN_JORNADA,JORA_FIN_JORNADA,HORA_DESCANSO_JORNADA,OBSERVACIONES_JORNADA) VALUES(:n,:c,:hi,:hf,:hd,:obs) RETURNING ID_JORNADA INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreJornada),OracleHelper.P("c",d.CodigoJornada),OracleHelper.P("hi",d.HoraInJornada),OracleHelper.P("hf",d.HoraFinJornada),OracleHelper.P("hd",d.HoraDescansoJornada),OracleHelper.P("obs",d.ObservacionesJornada),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_JOR_INS",
+            [OracleHelper.P("p_n",d.NombreJornada), OracleHelper.P("p_c",d.CodigoJornada),
+             OracleHelper.P("p_hi",d.HoraInJornada), OracleHelper.P("p_hf",d.HoraFinJornada),
+             OracleHelper.P("p_hd",d.HoraDescansoJornada), OracleHelper.P("p_obs",d.ObservacionesJornada),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/jornadas/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] JornadaDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] JornadaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE JORNADAS SET NOMBRE_JORNADA=NVL(:n,NOMBRE_JORNADA),HORA_IN_JORNADA=NVL(:hi,HORA_IN_JORNADA),JORA_FIN_JORNADA=NVL(:hf,JORA_FIN_JORNADA) WHERE ID_JORNADA=:p",
-            [OracleHelper.P("n",d.NombreJornada),OracleHelper.P("hi",d.HoraInJornada),OracleHelper.P("hf",d.HoraFinJornada),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_JOR_UPD",
+            [OracleHelper.P("p_n",d.NombreJornada), OracleHelper.P("p_hi",d.HoraInJornada),
+             OracleHelper.P("p_hf",d.HoraFinJornada), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try{_db.ExecuteNonQuery("DELETE FROM JORNADAS WHERE ID_JORNADA=:p",[OracleHelper.PInt("p",id)]);return Ok();}
-        catch(OracleException ex){return HandleOracleError(ex);}
+        try
+        {
+            _db.ExecuteNonQuery("SP_JOR_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
 public record JornadaDto(string? NombreJornada, string? CodigoJornada, string? HoraInJornada, string? HoraFinJornada, string? HoraDescansoJornada, string? ObservacionesJornada);
@@ -401,24 +487,32 @@ public record JornadaDto(string? NombreJornada, string? CodigoJornada, string? H
 public class NominaController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT N.*,S.NOMBRE_SUCURSAL FROM NOMINA N JOIN SUCURSALES S ON S.ID_SUCURSAL=N.ID_SUCURSAL ORDER BY N.PERIODO_NOMINA DESC"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_NOMINA ORDER BY PERIODO_NOMINA DESC"));
+
     [HttpPost] public IActionResult Create([FromBody] NominaDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO NOMINA(PERIODO_NOMINA,FECHA_PAGO_NOMINA,TOTAL_BRUTO_NOMINA,TOTAL_DESCUENTOS_NOMINA,TOTAL_NETO_NOMINA,ESTADO_NOMINA,ID_SUCURSAL,ID_USUARIO_CREA)
-                                    VALUES(:per,TO_DATE(:fp,'YYYY-MM-DD'),:tb,:td,:tn,'A',:suc,:ucrea) RETURNING ID_NOMINA INTO :p_id_out",
-            [OracleHelper.P("per",d.PeriodoNomina),OracleHelper.P("fp",d.FechaPagoNomina),OracleHelper.PDec("tb",d.TotalBrutoNomina),
-             OracleHelper.PDec("td",d.TotalDescuentosNomina),OracleHelper.PDec("tn",d.TotalNetoNomina),OracleHelper.PInt("suc",d.IdSucursal),
-             OracleHelper.PInt("ucrea",CurrentUserId),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_NOM_INS",
+            [OracleHelper.P("p_per",d.PeriodoNomina), OracleHelper.P("p_fp",d.FechaPagoNomina),
+             OracleHelper.PDec("p_tb",d.TotalBrutoNomina), OracleHelper.PDec("p_td",d.TotalDescuentosNomina),
+             OracleHelper.PDec("p_tn",d.TotalNetoNomina), OracleHelper.PInt("p_suc",d.IdSucursal),
+             OracleHelper.PInt("p_ucrea",CurrentUserId), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/nomina/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] NominaDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] NominaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE NOMINA SET TOTAL_BRUTO_NOMINA=NVL(:tb,TOTAL_BRUTO_NOMINA),TOTAL_DESCUENTOS_NOMINA=NVL(:td,TOTAL_DESCUENTOS_NOMINA),TOTAL_NETO_NOMINA=NVL(:tn,TOTAL_NETO_NOMINA),ESTADO_NOMINA=NVL(:est,ESTADO_NOMINA) WHERE ID_NOMINA=:p",
-            [OracleHelper.PDec("tb",d.TotalBrutoNomina),OracleHelper.PDec("td",d.TotalDescuentosNomina),OracleHelper.PDec("tn",d.TotalNetoNomina),OracleHelper.P("est",d.EstadoNomina),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_NOM_UPD",
+            [OracleHelper.PDec("p_tb",d.TotalBrutoNomina), OracleHelper.PDec("p_td",d.TotalDescuentosNomina),
+             OracleHelper.PDec("p_tn",d.TotalNetoNomina), OracleHelper.P("p_est",d.EstadoNomina),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE NOMINA SET ESTADO_NOMINA='I' WHERE ID_NOMINA=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_NOM_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record NominaDto(string? PeriodoNomina, string? FechaPagoNomina, decimal? TotalBrutoNomina, decimal? TotalDescuentosNomina, decimal? TotalNetoNomina, string? EstadoNomina, long? IdSucursal);
@@ -429,21 +523,34 @@ public record NominaDto(string? PeriodoNomina, string? FechaPagoNomina, decimal?
 [Route("api/categorias-articulo")]
 public class CategoriasArticuloController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll() => OkList(_db.ExecuteReader("SELECT * FROM CATEGORIAS_ARTICULO ORDER BY NIVEL_CATEGORIA_ARTICULO,NOMBRE_CATEGORIA_ARTICULO"));
+    [HttpGet] public IActionResult GetAll() =>
+        OkList(_db.ExecuteReader("SELECT * FROM VW_CATEGORIAS_ARTICULO ORDER BY NIVEL_CATEGORIA_ARTICULO, NOMBRE_CATEGORIA_ARTICULO"));
+
     [HttpPost] public IActionResult Create([FromBody] CategoriaDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO CATEGORIAS_ARTICULO(NOMBRE_CATEGORIA_ARTICULO,CODIGO_CATEGORIA_ARTICULO,NIVEL_CATEGORIA_ARTICULO,ID_CATEGORIA_ARTICULO_PADRE) VALUES(:n,:c,:niv,:padre) RETURNING ID_CATEGORIAS_ARTICULO INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreCategoriaArticulo),OracleHelper.P("c",d.CodigoCategoriaArticulo),OracleHelper.PInt("niv",d.NivelCategoriaArticulo),OracleHelper.PInt("padre",d.IdCategoriaArticuloPadre),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_CATART_INS",
+            [OracleHelper.P("p_n",d.NombreCategoriaArticulo), OracleHelper.P("p_c",d.CodigoCategoriaArticulo),
+             OracleHelper.PInt("p_niv",d.NivelCategoriaArticulo), OracleHelper.PInt("p_padre",d.IdCategoriaArticuloPadre),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/categorias-articulo/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] CategoriaDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] CategoriaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE CATEGORIAS_ARTICULO SET NOMBRE_CATEGORIA_ARTICULO=NVL(:n,NOMBRE_CATEGORIA_ARTICULO) WHERE ID_CATEGORIAS_ARTICULO=:p",[OracleHelper.P("n",d.NombreCategoriaArticulo),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_CATART_UPD",
+            [OracleHelper.P("p_n",d.NombreCategoriaArticulo), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try{_db.ExecuteNonQuery("DELETE FROM CATEGORIAS_ARTICULO WHERE ID_CATEGORIAS_ARTICULO=:p",[OracleHelper.PInt("p",id)]);return Ok();}
-        catch(OracleException ex){return HandleOracleError(ex);}
+        try
+        {
+            _db.ExecuteNonQuery("SP_CATART_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
 public record CategoriaDto(string? NombreCategoriaArticulo, string? CodigoCategoriaArticulo, int? NivelCategoriaArticulo, long? IdCategoriaArticuloPadre);
@@ -453,20 +560,30 @@ public record CategoriaDto(string? NombreCategoriaArticulo, string? CodigoCatego
 public class BodegasController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT B.*,S.NOMBRE_SUCURSAL FROM BODEGAS B JOIN SUCURSALES S ON S.ID_SUCURSAL=B.ID_SUCURSAL ORDER BY B.NOMBRE_BODEGA"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_BODEGAS ORDER BY NOMBRE_BODEGA"));
+
     [HttpPost] public IActionResult Create([FromBody] BodegaDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO BODEGAS(CODIGO_BODEGA,NOMBRE_BODEGA,TIPO_BODEGA,DIRECCION_BODEGA,ESTADO_BODEGA,ID_SUCURSAL) VALUES(:c,:n,:t,:d,NVL(:est,'A'),:suc) RETURNING ID_BODEGA INTO :p_id_out",
-            [OracleHelper.P("c",d.CodigoBodega),OracleHelper.P("n",d.NombreBodega),OracleHelper.P("t",d.TipoBodega),OracleHelper.P("d",d.DireccionBodega),OracleHelper.P("est",d.EstadoBodega),OracleHelper.PInt("suc",d.IdSucursal),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_BOD_INS",
+            [OracleHelper.P("p_c",d.CodigoBodega), OracleHelper.P("p_n",d.NombreBodega),
+             OracleHelper.P("p_t",d.TipoBodega), OracleHelper.P("p_d",d.DireccionBodega),
+             OracleHelper.P("p_est",d.EstadoBodega), OracleHelper.PInt("p_suc",d.IdSucursal),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/bodegas/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] BodegaDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] BodegaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE BODEGAS SET NOMBRE_BODEGA=NVL(:n,NOMBRE_BODEGA),ESTADO_BODEGA=NVL(:est,ESTADO_BODEGA) WHERE ID_BODEGA=:p",[OracleHelper.P("n",d.NombreBodega),OracleHelper.P("est",d.EstadoBodega),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_BOD_UPD",
+            [OracleHelper.P("p_n",d.NombreBodega), OracleHelper.P("p_est",d.EstadoBodega),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE BODEGAS SET ESTADO_BODEGA='I' WHERE ID_BODEGA=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_BOD_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record BodegaDto(string? CodigoBodega, string? NombreBodega, string? TipoBodega, string? DireccionBodega, string? EstadoBodega, long? IdSucursal);
@@ -475,22 +592,29 @@ public record BodegaDto(string? CodigoBodega, string? NombreBodega, string? Tipo
 [Route("api/stock-articulo")]
 public class StockController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll([FromQuery] long? idArticulo=null)
+    [HttpGet] public IActionResult GetAll([FromQuery] long? idArticulo = null)
     {
-        var sql = "SELECT SA.*,A.NOMBRE_ARTICULO,A.CODIGO_ARTICULO FROM STOCK_ARTICULO SA JOIN ARTICULO A ON A.ID_ARTICULO=SA.ID_ARTICULO"
-                + (idArticulo.HasValue ? " WHERE SA.ID_ARTICULO=:p" : "");
-        return OkList(_db.ExecuteReader(sql, idArticulo.HasValue ? [OracleHelper.PInt("p",idArticulo)] : null));
+        var sql = "SELECT * FROM VW_STOCK_ARTICULO"
+                + (idArticulo.HasValue ? " WHERE ID_ARTICULO = :p" : "");
+        return OkList(_db.ExecuteReader(sql, idArticulo.HasValue ? [OracleHelper.PInt("p", idArticulo)] : null));
     }
+
     [HttpPost] public IActionResult Create([FromBody] StockDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO STOCK_ARTICULO(CANTIDAD_DIPONIBLE_STOCK_ARTICULO,CANTIDAD_RESERVADA_STOCK_ARTICULO,CANTIDAD_TRNASITO_STOCK_ARTICULO,COSTO_PROMEDIO_STOCK_ARTICULO,ID_ARTICULO,ID_UBICACION_BODEGA) VALUES(:cd,NVL(:cr,0),NVL(:ct,0),NVL(:cp,0),:art,:ubod) RETURNING ID_STOCK_ARTICULO INTO :p_id_out",
-            [OracleHelper.PDec("cd",d.CantidadDisponible),OracleHelper.PDec("cr",d.CantidadReservada),OracleHelper.PDec("ct",d.CantidadTransito),OracleHelper.PDec("cp",d.CostoPromedio),OracleHelper.PInt("art",d.IdArticulo),OracleHelper.PInt("ubod",d.IdUbicacionBodega),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_STOCK_INS",
+            [OracleHelper.PDec("p_cd",d.CantidadDisponible), OracleHelper.PDec("p_cr",d.CantidadReservada),
+             OracleHelper.PDec("p_ct",d.CantidadTransito), OracleHelper.PDec("p_cp",d.CostoPromedio),
+             OracleHelper.PInt("p_art",d.IdArticulo), OracleHelper.PInt("p_ubod",d.IdUbicacionBodega),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/stock-articulo/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] StockDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] StockDto d)
     {
-        _db.ExecuteNonQuery("UPDATE STOCK_ARTICULO SET CANTIDAD_DIPONIBLE_STOCK_ARTICULO=NVL(:cd,CANTIDAD_DIPONIBLE_STOCK_ARTICULO),COSTO_PROMEDIO_STOCK_ARTICULO=NVL(:cp,COSTO_PROMEDIO_STOCK_ARTICULO) WHERE ID_STOCK_ARTICULO=:p",
-            [OracleHelper.PDec("cd",d.CantidadDisponible),OracleHelper.PDec("cp",d.CostoPromedio),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_STOCK_UPD",
+            [OracleHelper.PDec("p_cd",d.CantidadDisponible), OracleHelper.PDec("p_cp",d.CostoPromedio),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record StockDto(decimal? CantidadDisponible, decimal? CantidadReservada, decimal? CantidadTransito, decimal? CostoPromedio, long? IdArticulo, long? IdUbicacionBodega);
@@ -501,32 +625,40 @@ public record StockDto(decimal? CantidadDisponible, decimal? CantidadReservada, 
 [Route("api/proveedores")]
 public class ProveedoresController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll([FromQuery] string? search=null)
+    [HttpGet] public IActionResult GetAll([FromQuery] string? search = null)
     {
-        var sql = "SELECT P.*,M.CODIGO_MONEDA FROM PROVEEDORES P LEFT JOIN MONEDAS M ON M.ID_MONEDA=P.ID_MONEDA"
-                + (search is null ? "" : " WHERE UPPER(P.RAZON_SOCIAL_PROVEEDOR) LIKE UPPER(:s) OR P.NIT_PROVEEDOR LIKE :s")
-                + " ORDER BY P.RAZON_SOCIAL_PROVEEDOR";
+        var sql = "SELECT * FROM VW_PROVEEDORES"
+                + (search is null ? "" : " WHERE UPPER(RAZON_SOCIAL_PROVEEDOR) LIKE UPPER(:s) OR NIT_PROVEEDOR LIKE :s")
+                + " ORDER BY RAZON_SOCIAL_PROVEEDOR";
         var q = search is null ? null : $"%{search}%";
-        return OkList(_db.ExecuteReader(sql, search is null ? null : [OracleHelper.P("s",q)]));
+        return OkList(_db.ExecuteReader(sql, search is null ? null : [OracleHelper.P("s", q)]));
     }
+
     [HttpPost] public IActionResult Create([FromBody] ProveedorDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO PROVEEDORES(CODIGO_PROVEEDOR,RAZON_SOCIAL_PROVEEDOR,NIT_PROVEEDOR,DIRECCION_PROVEEDOR,TELEFON_PROVEEDOR,EMAIL_PROVEEDOR,PLAZO_PAGO_PROVEEDOR,CLASIFICACION_PROVEEDOR,ESTADO_PROVEEDOR,ID_MONEDA)
-                                    VALUES(:c,:rs,:nit,:dir,:tel,:email,:pp,:clas,NVL(:est,'A'),:mon) RETURNING ID_PROVEEDOR INTO :p_id_out",
-            [OracleHelper.P("c",d.CodigoProveedor),OracleHelper.P("rs",d.RazonSocialProveedor),OracleHelper.P("nit",d.NitProveedor),
-             OracleHelper.P("dir",d.DireccionProveedor),OracleHelper.P("tel",d.TelefonoProveedor),OracleHelper.P("email",d.EmailProveedor),
-             OracleHelper.PInt("pp",d.PlazoPagoProveedor),OracleHelper.P("clas",d.ClasificacionProveedor),OracleHelper.P("est",d.EstadoProveedor),
-             OracleHelper.PInt("mon",d.IdMoneda),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_PROV_INS",
+            [OracleHelper.P("p_c",d.CodigoProveedor), OracleHelper.P("p_rs",d.RazonSocialProveedor),
+             OracleHelper.P("p_nit",d.NitProveedor), OracleHelper.P("p_dir",d.DireccionProveedor),
+             OracleHelper.P("p_tel",d.TelefonoProveedor), OracleHelper.P("p_email",d.EmailProveedor),
+             OracleHelper.PInt("p_pp",d.PlazoPagoProveedor), OracleHelper.P("p_clas",d.ClasificacionProveedor),
+             OracleHelper.P("p_est",d.EstadoProveedor), OracleHelper.PInt("p_mon",d.IdMoneda),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/proveedores/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] ProveedorDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] ProveedorDto d)
     {
-        _db.ExecuteNonQuery("UPDATE PROVEEDORES SET RAZON_SOCIAL_PROVEEDOR=NVL(:rs,RAZON_SOCIAL_PROVEEDOR),PLAZO_PAGO_PROVEEDOR=NVL(:pp,PLAZO_PAGO_PROVEEDOR),ESTADO_PROVEEDOR=NVL(:est,ESTADO_PROVEEDOR) WHERE ID_PROVEEDOR=:p",
-            [OracleHelper.P("rs",d.RazonSocialProveedor),OracleHelper.PInt("pp",d.PlazoPagoProveedor),OracleHelper.P("est",d.EstadoProveedor),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_PROV_UPD",
+            [OracleHelper.P("p_rs",d.RazonSocialProveedor), OracleHelper.PInt("p_pp",d.PlazoPagoProveedor),
+             OracleHelper.P("p_est",d.EstadoProveedor), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE PROVEEDORES SET ESTADO_PROVEEDOR='I' WHERE ID_PROVEEDOR=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_PROV_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record ProveedorDto(string? CodigoProveedor, string? RazonSocialProveedor, string? NitProveedor, string? DireccionProveedor, string? TelefonoProveedor, string? EmailProveedor, int? PlazoPagoProveedor, string? ClasificacionProveedor, string? EstadoProveedor, long? IdMoneda);
@@ -536,24 +668,33 @@ public record ProveedorDto(string? CodigoProveedor, string? RazonSocialProveedor
 public class OrdenesCompraController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT OC.*,P.RAZON_SOCIAL_PROVEEDOR,M.CODIGO_MONEDA FROM ORDEN_COMPRA OC JOIN PROVEEDORES P ON P.ID_PROVEEDOR=OC.ID_PROVEEDOR LEFT JOIN MONEDAS M ON M.ID_MONEDA=OC.ID_MONEDA ORDER BY OC.FECHA_SOLICITUD_ORDEN_COMPRA DESC"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_ORDENES_COMPRA ORDER BY FECHA_SOLICITUD_ORDEN_COMPRA DESC"));
+
     [HttpPost] public IActionResult Create([FromBody] OrdenCompraDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO ORDEN_COMPRA(NUMERO_ORDEN_COMPRA,FECHA_SOLICITUD_ORDEN_COMPRA,FECHA_INGRESO_ORDEN_COMPRA,SUBTOTAL_ORDEN_COMPRA,IMPUESTO_ORDEN_COMPRA,TOTAL_ORDEN_COMPRA,ESTADO_ORDEN_COMPRA,ID_PROVEEDOR,ID_MONEDA,ID_SOLICITUD_COMPRA,ID_USUARIO_CREA)
-                                    VALUES(:num,SYSDATE,SYSDATE,:sub,:imp,:tot,'P',:prov,:mon,:sol,:ucrea) RETURNING ID_ORDEN_COMPRA INTO :p_id_out",
-            [OracleHelper.P("num",d.NumeroOrdenCompra),OracleHelper.PDec("sub",d.SubtotalOrdenCompra),OracleHelper.PDec("imp",d.ImpuestoOrdenCompra),
-             OracleHelper.PDec("tot",d.TotalOrdenCompra),OracleHelper.PInt("prov",d.IdProveedor),OracleHelper.PInt("mon",d.IdMoneda),
-             OracleHelper.PInt("sol",d.IdSolicitudCompra),OracleHelper.PInt("ucrea",CurrentUserId),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_OC_INS",
+            [OracleHelper.P("p_num",d.NumeroOrdenCompra), OracleHelper.PDec("p_sub",d.SubtotalOrdenCompra),
+             OracleHelper.PDec("p_imp",d.ImpuestoOrdenCompra), OracleHelper.PDec("p_tot",d.TotalOrdenCompra),
+             OracleHelper.PInt("p_prov",d.IdProveedor), OracleHelper.PInt("p_mon",d.IdMoneda),
+             OracleHelper.PInt("p_sol",d.IdSolicitudCompra), OracleHelper.PInt("p_ucrea",CurrentUserId),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/ordenes-compra/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] OrdenCompraDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] OrdenCompraDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_COMPRA SET SUBTOTAL_ORDEN_COMPRA=NVL(:sub,SUBTOTAL_ORDEN_COMPRA),IMPUESTO_ORDEN_COMPRA=NVL(:imp,IMPUESTO_ORDEN_COMPRA),TOTAL_ORDEN_COMPRA=NVL(:tot,TOTAL_ORDEN_COMPRA),ESTADO_ORDEN_COMPRA=NVL(:est,ESTADO_ORDEN_COMPRA),ID_USUARIO_MODIFICA=:umod WHERE ID_ORDEN_COMPRA=:p",
-            [OracleHelper.PDec("sub",d.SubtotalOrdenCompra),OracleHelper.PDec("imp",d.ImpuestoOrdenCompra),OracleHelper.PDec("tot",d.TotalOrdenCompra),OracleHelper.P("est",d.EstadoOrdenCompra),OracleHelper.PInt("umod",CurrentUserId),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_OC_UPD",
+            [OracleHelper.PDec("p_sub",d.SubtotalOrdenCompra), OracleHelper.PDec("p_imp",d.ImpuestoOrdenCompra),
+             OracleHelper.PDec("p_tot",d.TotalOrdenCompra), OracleHelper.P("p_est",d.EstadoOrdenCompra),
+             OracleHelper.PInt("p_umod",CurrentUserId), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_COMPRA SET ESTADO_ORDEN_COMPRA='C' WHERE ID_ORDEN_COMPRA=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_OC_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record OrdenCompraDto(string? NumeroOrdenCompra, decimal? SubtotalOrdenCompra, decimal? ImpuestoOrdenCompra, decimal? TotalOrdenCompra, string? EstadoOrdenCompra, long? IdProveedor, long? IdMoneda, long? IdSolicitudCompra);
@@ -564,34 +705,46 @@ public record OrdenCompraDto(string? NumeroOrdenCompra, decimal? SubtotalOrdenCo
 [Route("api/clientes")]
 public class ClientesController(OracleHelper db) : BaseController(db)
 {
-    [HttpGet] public IActionResult GetAll([FromQuery] string? search=null)
+    [HttpGet] public IActionResult GetAll([FromQuery] string? search = null)
     {
-        var sql = "SELECT C.*,LP.NOMBRE_LISTA_PRECIOS FROM CLIENTE C LEFT JOIN LISTA_PRECIOS LP ON LP.ID_LISTA_PRECIOS=C.ID_LISTA_PRECIOS"
-                + (search is null ? "" : " WHERE UPPER(C.RAZON_SOCIAL_CLIENTE) LIKE UPPER(:s) OR C.NIT_CLIENTE LIKE :s")
-                + " ORDER BY C.RAZON_SOCIAL_CLIENTE";
+        var sql = "SELECT * FROM VW_CLIENTES"
+                + (search is null ? "" : " WHERE UPPER(RAZON_SOCIAL_CLIENTE) LIKE UPPER(:s) OR NIT_CLIENTE LIKE :s")
+                + " ORDER BY RAZON_SOCIAL_CLIENTE";
         var q = search is null ? null : $"%{search}%";
-        return OkList(_db.ExecuteReader(sql, search is null ? null : [OracleHelper.P("s",q)]));
+        return OkList(_db.ExecuteReader(sql, search is null ? null : [OracleHelper.P("s", q)]));
     }
+
     [HttpPost] public IActionResult Create([FromBody] ClienteDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO CLIENTE(CODIGO_CLIENTE,RAZON_SOCIAL_CLIENTE,NIT_CLIENTE,LIMITE_CREDITO_CLIENTE,TELEFON_CLIENTE,EMAIL_CLIENTE,PLAZO_PAGO_CLIENTES,ESTADO_CLIENTE,ID_LISTA_PRECIOS,ID_SUCURSAL)
-                                    VALUES(:c,:rs,:nit,:lim,:tel,:email,:pp,NVL(:est,'A'),:lp,:suc) RETURNING ID_CLIENTE INTO :p_id_out",
-            [OracleHelper.P("c",d.CodigoCliente),OracleHelper.P("rs",d.RazonSocialCliente),OracleHelper.P("nit",d.NitCliente),
-             OracleHelper.PDec("lim",d.LimiteCreditoCliente),OracleHelper.P("tel",d.TelefonoCliente),OracleHelper.P("email",d.EmailCliente),
-             OracleHelper.PInt("pp",d.PlazoPagoClientes),OracleHelper.P("est",d.EstadoCliente),OracleHelper.PInt("lp",d.IdListaPrecios),
-             OracleHelper.PInt("suc",d.IdSucursal),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_CLI_INS",
+            [OracleHelper.P("p_c",d.CodigoCliente), OracleHelper.P("p_rs",d.RazonSocialCliente),
+             OracleHelper.P("p_nit",d.NitCliente), OracleHelper.PDec("p_lim",d.LimiteCreditoCliente),
+             OracleHelper.P("p_tel",d.TelefonoCliente), OracleHelper.P("p_email",d.EmailCliente),
+             OracleHelper.PInt("p_pp",d.PlazoPagoClientes), OracleHelper.P("p_est",d.EstadoCliente),
+             OracleHelper.PInt("p_lp",d.IdListaPrecios), OracleHelper.PInt("p_suc",d.IdSucursal),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/clientes/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] ClienteDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] ClienteDto d)
     {
-        _db.ExecuteNonQuery("UPDATE CLIENTE SET RAZON_SOCIAL_CLIENTE=NVL(:rs,RAZON_SOCIAL_CLIENTE),LIMITE_CREDITO_CLIENTE=NVL(:lim,LIMITE_CREDITO_CLIENTE),ESTADO_CLIENTE=NVL(:est,ESTADO_CLIENTE) WHERE ID_CLIENTE=:p",
-            [OracleHelper.P("rs",d.RazonSocialCliente),OracleHelper.PDec("lim",d.LimiteCreditoCliente),OracleHelper.P("est",d.EstadoCliente),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_CLI_UPD",
+            [OracleHelper.P("p_rs",d.RazonSocialCliente), OracleHelper.PDec("p_lim",d.LimiteCreditoCliente),
+             OracleHelper.P("p_est",d.EstadoCliente), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        var count = Convert.ToInt32(_db.ExecuteScalar("SELECT COUNT(*) FROM ORDEN_VENTA WHERE ID_SUCURSAL_CLEINTE=:p",[OracleHelper.PInt("p",id)]));
-        if (count > 0) return Conflict(new { message = "No se puede eliminar: el cliente tiene compras registradas." });
-        _db.ExecuteNonQuery("UPDATE CLIENTE SET ESTADO_CLIENTE='I' WHERE ID_CLIENTE=:p",[OracleHelper.PInt("p",id)]);
+        // Validación de integridad: verificar si el cliente tiene órdenes
+        var count = Convert.ToInt32(_db.ExecuteScalar(
+            "SELECT COUNT(*) FROM VW_ORDENES_VENTA WHERE ID_CLIENTE = :p",
+            [OracleHelper.PInt("p", id)]));
+        if (count > 0)
+            return Conflict(new { message = "No se puede eliminar: el cliente tiene compras registradas." });
+
+        _db.ExecuteNonQuery("SP_CLI_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
         return Ok();
     }
 }
@@ -602,19 +755,30 @@ public record ClienteDto(string? CodigoCliente, string? RazonSocialCliente, stri
 public class ListaPreciosController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT LP.*,M.CODIGO_MONEDA FROM LISTA_PRECIOS LP LEFT JOIN MONEDAS M ON M.ID_MONEDA=LP.ID_MONEDA ORDER BY LP.NOMBRE_LISTA_PRECIOS"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_LISTA_PRECIOS ORDER BY NOMBRE_LISTA_PRECIOS"));
+
     [HttpGet("{id:long}/detalle")] public IActionResult GetDetalle(long id) =>
-        OkList(_db.ExecuteReader("SELECT LPD.*,A.NOMBRE_ARTICULO,A.CODIGO_ARTICULO FROM LISTA_PRECIOS_DET LPD JOIN ARTICULO A ON A.ID_ARTICULO=LPD.ID_ARTICULO WHERE LPD.ID_LISTA_PRECIOS=:p ORDER BY A.NOMBRE_ARTICULO",[OracleHelper.PInt("p",id)]));
+        OkList(_db.ExecuteReader(
+            "SELECT * FROM VW_LISTA_PRECIOS_DET WHERE ID_LISTA_PRECIOS = :p ORDER BY NOMBRE_ARTICULO",
+            [OracleHelper.PInt("p", id)]));
+
     [HttpPost] public IActionResult Create([FromBody] ListaPreciosDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO LISTA_PRECIOS(NOMBRE_LISTA_PRECIOS,FECHA_DESDE_LISTA_PRECIOS,FECHA_HASTA_LISTA_PRECIOS,ID_MONEDA) VALUES(:n,TO_DATE(:fd,'YYYY-MM-DD'),TO_DATE(:fh,'YYYY-MM-DD'),:mon) RETURNING ID_LISTA_PRECIOS INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreListaPrecios),OracleHelper.P("fd",d.FechaDesdeListaPrecios),OracleHelper.P("fh",d.FechaHastaListaPrecios),OracleHelper.PInt("mon",d.IdMoneda),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_LP_INS",
+            [OracleHelper.P("p_n",d.NombreListaPrecios), OracleHelper.P("p_fd",d.FechaDesdeListaPrecios),
+             OracleHelper.P("p_fh",d.FechaHastaListaPrecios), OracleHelper.PInt("p_mon",d.IdMoneda),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/lista-precios/{id}", new { id });
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        try{_db.ExecuteNonQuery("DELETE FROM LISTA_PRECIOS WHERE ID_LISTA_PRECIOS=:p",[OracleHelper.PInt("p",id)]);return Ok();}
-        catch(OracleException ex){return HandleOracleError(ex);}
+        try
+        {
+            _db.ExecuteNonQuery("SP_LP_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+            return Ok();
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
     }
 }
 public record ListaPreciosDto(string? NombreListaPrecios, string? FechaDesdeListaPrecios, string? FechaHastaListaPrecios, long? IdMoneda);
@@ -624,20 +788,30 @@ public record ListaPreciosDto(string? NombreListaPrecios, string? FechaDesdeList
 public class FacturasVentaController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT FV.*,SM.NUMERO_SALIDA_MERCADERIA FROM FACTURA_VENTA FV LEFT JOIN SALIDA_MERCADERIA SM ON SM.ID_SALIDA_MERCADERIA=FV.ID_SALIDA_MERCADERIA ORDER BY FV.FECHA_FACTURA_VENTA DESC"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_FACTURAS_VENTA ORDER BY FECHA_FACTURA_VENTA DESC"));
+
     [HttpPost] public IActionResult Create([FromBody] FacturaDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO FACTURA_VENTA(SERIE_FACTURA_VENTA,CORRELATIVO_FACTURA_VENTA,FECHA_SALIDA_FACTURA_VENTA,FECHA_FACTURA_VENTA,ESTADO_SALIDA_MERCADERIA,TOTAL_FACTURA_VENTA,ID_SALIDA_MERCADERIA,ID_USUARIO_CREA) VALUES(:s,:cor,SYSDATE,SYSDATE,'A',:tot,:sm,:ucrea) RETURNING ID_FACTURA_VENTA INTO :p_id_out",
-            [OracleHelper.P("s",d.SerieFacturaVenta),OracleHelper.P("cor",d.CorrelativoFacturaVenta),OracleHelper.PDec("tot",d.TotalFacturaVenta),OracleHelper.PInt("sm",d.IdSalidaMercaderia),OracleHelper.PInt("ucrea",CurrentUserId),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_FV_INS",
+            [OracleHelper.P("p_s",d.SerieFacturaVenta), OracleHelper.P("p_cor",d.CorrelativoFacturaVenta),
+             OracleHelper.PDec("p_tot",d.TotalFacturaVenta), OracleHelper.PInt("p_sm",d.IdSalidaMercaderia),
+             OracleHelper.PInt("p_ucrea",CurrentUserId), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/facturas-venta/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] FacturaDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] FacturaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE FACTURA_VENTA SET ESTADO_SALIDA_MERCADERIA=NVL(:est,ESTADO_SALIDA_MERCADERIA) WHERE ID_FACTURA_VENTA=:p",[OracleHelper.P("est",d.EstadoSalidaMercaderia),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_FV_UPD",
+            [OracleHelper.P("p_est",d.EstadoSalidaMercaderia), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE FACTURA_VENTA SET ESTADO_SALIDA_MERCADERIA='C' WHERE ID_FACTURA_VENTA=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_FV_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record FacturaDto(string? SerieFacturaVenta, string? CorrelativoFacturaVenta, decimal? TotalFacturaVenta, string? EstadoSalidaMercaderia, long? IdSalidaMercaderia);
@@ -649,20 +823,30 @@ public record FacturaDto(string? SerieFacturaVenta, string? CorrelativoFacturaVe
 public class CentrosTrabajoController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT CT.*,S.NOMBRE_SUCURSAL FROM CENTRO_TRABAJO CT LEFT JOIN SUCURSALES S ON S.ID_SUCURSAL=CT.ID_SUCURSAL ORDER BY CT.NOMBRE_CENTRO_TRABAJO"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_CENTROS_TRABAJO ORDER BY NOMBRE_CENTRO_TRABAJO"));
+
     [HttpPost] public IActionResult Create([FromBody] CentroTrabajoDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO CENTRO_TRABAJO(CODIGO_CENTRO_TRABAJO,NOMBRE_CENTRO_TRABAJO,CAPACIDAD_HORA,VOSTO_HORA_CENTRO_TRABAJO,ESTADO_CENTRO_TRABAJO,ID_SUCURSAL) VALUES(:c,:n,:ch,:vh,NVL(:est,'A'),:suc) RETURNING ID_CENTRO_TRABAJO INTO :p_id_out",
-            [OracleHelper.P("c",d.CodigoCentroTrabajo),OracleHelper.P("n",d.NombreCentroTrabajo),OracleHelper.PDec("ch",d.CapacidadHora),OracleHelper.PDec("vh",d.VostoHoraCentroTrabajo),OracleHelper.P("est",d.EstadoCentroTrabajo),OracleHelper.PInt("suc",d.IdSucursal),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_CT_INS",
+            [OracleHelper.P("p_c",d.CodigoCentroTrabajo), OracleHelper.P("p_n",d.NombreCentroTrabajo),
+             OracleHelper.PDec("p_ch",d.CapacidadHora), OracleHelper.PDec("p_vh",d.VostoHoraCentroTrabajo),
+             OracleHelper.P("p_est",d.EstadoCentroTrabajo), OracleHelper.PInt("p_suc",d.IdSucursal),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/centros-trabajo/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] CentroTrabajoDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] CentroTrabajoDto d)
     {
-        _db.ExecuteNonQuery("UPDATE CENTRO_TRABAJO SET NOMBRE_CENTRO_TRABAJO=NVL(:n,NOMBRE_CENTRO_TRABAJO),ESTADO_CENTRO_TRABAJO=NVL(:est,ESTADO_CENTRO_TRABAJO) WHERE ID_CENTRO_TRABAJO=:p",[OracleHelper.P("n",d.NombreCentroTrabajo),OracleHelper.P("est",d.EstadoCentroTrabajo),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_CT_UPD",
+            [OracleHelper.P("p_n",d.NombreCentroTrabajo), OracleHelper.P("p_est",d.EstadoCentroTrabajo),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE CENTRO_TRABAJO SET ESTADO_CENTRO_TRABAJO='I' WHERE ID_CENTRO_TRABAJO=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_CT_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record CentroTrabajoDto(string? CodigoCentroTrabajo, string? NombreCentroTrabajo, decimal? CapacidadHora, decimal? VostoHoraCentroTrabajo, string? EstadoCentroTrabajo, long? IdSucursal);
@@ -672,24 +856,34 @@ public record CentroTrabajoDto(string? CodigoCentroTrabajo, string? NombreCentro
 public class OrdenesProduccionController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT OP.*,CT.NOMBRE_CENTRO_TRABAJO,LM.NOMBRE_LISTA__MATERIALES FROM ORDEN_PRODUCCION OP LEFT JOIN CENTRO_TRABAJO CT ON CT.ID_CENTRO_TRABAJO=OP.ID_CENTRO_TRABAJO LEFT JOIN LISTA_MATERIALES LM ON LM.ID_LISTA_MATERIALES=OP.ID_LISTA_MATERIALES ORDER BY OP.FECHA_IN_ORDEN_PRODUCCION DESC"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_ORDENES_PRODUCCION ORDER BY FECHA_IN_ORDEN_PRODUCCION DESC"));
+
     [HttpPost] public IActionResult Create([FromBody] OrdenProduccionDto d)
     {
-        var id = _db.ExecuteInsert(@"INSERT INTO ORDEN_PRODUCCION(CODIGO_ORDEN_PRODUCCION,FECHA_IN_ORDEN_PRODUCCION,FECHA_FIN_ORDEN_PRODUCCION,CANTIDAD_PLANIFICADA_ORDEN_PRODUCCION,CANTIDAD_PRODUCIDA_ORIDEN_PRODUCCION,CANTIDAD_MERMA_ORDEN_PRODUCCION,ESTADO_ORDEN_PRODUCCION,ID_LISTA_MATERIALES,ID_CENTRO_TRABAJO,ID_SUCURSAL,ID_USUARIO_CREA)
-                                    VALUES(:cod,TO_DATE(:fi,'YYYY-MM-DD'),TO_DATE(:ff,'YYYY-MM-DD'),:cp,0,0,'P',:lm,:ct,:suc,:ucrea) RETURNING ID_ORDEN_PRODUCCION INTO :p_id_out",
-            [OracleHelper.P("cod",d.CodigoOrdenProduccion),OracleHelper.P("fi",d.FechaInOrdenProduccion),OracleHelper.P("ff",d.FechaFinOrdenProduccion),
-             OracleHelper.PDec("cp",d.CantidadPlanificadaOrdenProduccion),OracleHelper.PInt("lm",d.IdListaMateriales),OracleHelper.PInt("ct",d.IdCentroTrabajo),
-             OracleHelper.PInt("suc",d.IdSucursal),OracleHelper.PInt("ucrea",CurrentUserId),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_OP_INS",
+            [OracleHelper.P("p_cod",d.CodigoOrdenProduccion), OracleHelper.P("p_fi",d.FechaInOrdenProduccion),
+             OracleHelper.P("p_ff",d.FechaFinOrdenProduccion), OracleHelper.PDec("p_cp",d.CantidadPlanificadaOrdenProduccion),
+             OracleHelper.PInt("p_lm",d.IdListaMateriales), OracleHelper.PInt("p_ct",d.IdCentroTrabajo),
+             OracleHelper.PInt("p_suc",d.IdSucursal), OracleHelper.PInt("p_ucrea",CurrentUserId),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/ordenes-produccion/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] OrdenProduccionDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] OrdenProduccionDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_PRODUCCION SET CANTIDAD_PLANIFICADA_ORDEN_PRODUCCION=NVL(:cplan,CANTIDAD_PLANIFICADA_ORDEN_PRODUCCION),CANTIDAD_PRODUCIDA_ORDEN_PRODUCCION=NVL(:cprod,CANTIDAD_PRODUCIDA_ORDEN_PRODUCCION),ESTADO_ORDEN_PRODUCCION=NVL(:est,ESTADO_ORDEN_PRODUCCION),ID_USUARIO_MODIFICA=:umod WHERE ID_ORDEN_PRODUCCION=:p",
-            [OracleHelper.PDec("cplan",d.CantidadPlanificadaOrdenProduccion),OracleHelper.PDec("cprod",d.CantidadProducida),OracleHelper.P("est",d.EstadoOrdenProduccion),OracleHelper.PInt("umod",CurrentUserId),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_OP_UPD",
+            [OracleHelper.PDec("p_cplan",d.CantidadPlanificadaOrdenProduccion),
+             OracleHelper.PDec("p_cprod",d.CantidadProducida),
+             OracleHelper.P("p_est",d.EstadoOrdenProduccion),
+             OracleHelper.PInt("p_umod",CurrentUserId), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_PRODUCCION SET ESTADO_ORDEN_PRODUCCION='R' WHERE ID_ORDEN_PRODUCCION=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_OP_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record OrdenProduccionDto(string? CodigoOrdenProduccion, string? FechaInOrdenProduccion, string? FechaFinOrdenProduccion, decimal? CantidadPlanificadaOrdenProduccion, decimal? CantidadProducida, string? EstadoOrdenProduccion, long? IdListaMateriales, long? IdCentroTrabajo, long? IdSucursal);
@@ -701,20 +895,32 @@ public record OrdenProduccionDto(string? CodigoOrdenProduccion, string? FechaInO
 public class VehiculosController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT V.*,S.NOMBRE_SUCURSAL FROM VEHICULO V LEFT JOIN SUCURSALES S ON S.ID_SUCURSAL=V.ID_SUCURSAL ORDER BY V.PLACA_VEHICULO"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_VEHICULOS ORDER BY PLACA_VEHICULO"));
+
     [HttpPost] public IActionResult Create([FromBody] VehiculoDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO VEHICULO(PLACA_VEHICULO,MARCA_VEHICULO,MODELO_VEHICULO,TIPO_VEHICULO,CAPACIDAD_KG_VEHICULO,KM_ULT_SERV_VEHICULO,KM_SIG_SERV_VEHICULO,ESTADO_VEHICULO,ID_SUCURSAL) VALUES(:p,:m,:mod,:t,:cap,:kult,:ksig,NVL(:est,'A'),:suc) RETURNING ID_VEHICULO INTO :p_id_out",
-            [OracleHelper.P("p",d.PlacaVehiculo),OracleHelper.P("m",d.MarcaVehiculo),OracleHelper.P("mod",d.ModeloVehiculo),OracleHelper.P("t",d.TipoVehiculo),OracleHelper.PDec("cap",d.CapacidadKgVehiculo),OracleHelper.PDec("kult",d.KmUltServVehiculo),OracleHelper.PDec("ksig",d.KmSigServVehiculo),OracleHelper.P("est",d.EstadoVehiculo),OracleHelper.PInt("suc",d.IdSucursal),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_VEH_INS",
+            [OracleHelper.P("p_p",d.PlacaVehiculo), OracleHelper.P("p_m",d.MarcaVehiculo),
+             OracleHelper.P("p_mod",d.ModeloVehiculo), OracleHelper.P("p_t",d.TipoVehiculo),
+             OracleHelper.PDec("p_cap",d.CapacidadKgVehiculo), OracleHelper.PDec("p_kult",d.KmUltServVehiculo),
+             OracleHelper.PDec("p_ksig",d.KmSigServVehiculo), OracleHelper.P("p_est",d.EstadoVehiculo),
+             OracleHelper.PInt("p_suc",d.IdSucursal), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/vehiculos/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] VehiculoDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] VehiculoDto d)
     {
-        _db.ExecuteNonQuery("UPDATE VEHICULO SET ESTADO_VEHICULO=NVL(:est,ESTADO_VEHICULO),KM_SIG_SERV_VEHICULO=NVL(:ksig,KM_SIG_SERV_VEHICULO) WHERE ID_VEHICULO=:p",[OracleHelper.P("est",d.EstadoVehiculo),OracleHelper.PDec("ksig",d.KmSigServVehiculo),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_VEH_UPD",
+            [OracleHelper.P("p_est",d.EstadoVehiculo), OracleHelper.PDec("p_ksig",d.KmSigServVehiculo),
+             OracleHelper.PInt("p_id",id)], isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE VEHICULO SET ESTADO_VEHICULO='I' WHERE ID_VEHICULO=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_VEH_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record VehiculoDto(string? PlacaVehiculo, string? MarcaVehiculo, string? ModeloVehiculo, string? TipoVehiculo, decimal? CapacidadKgVehiculo, decimal? KmUltServVehiculo, decimal? KmSigServVehiculo, string? EstadoVehiculo, long? IdSucursal);
@@ -724,20 +930,31 @@ public record VehiculoDto(string? PlacaVehiculo, string? MarcaVehiculo, string? 
 public class TransportistasController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT T.*,E.NOMBRES_EMPLEADO FROM TRANSPORTISTA T LEFT JOIN EMPLEADOS E ON E.ID_EMPLEADO=T.ID_EMPLEADO ORDER BY T.NOMBRE_TRANSPORTISTA"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_TRANSPORTISTAS ORDER BY NOMBRE_TRANSPORTISTA"));
+
     [HttpPost] public IActionResult Create([FromBody] TransportistaDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO TRANSPORTISTA(NOMBRE_TRANSPORTISTA,APELLIDOS_TRANSPORTISTA,LICENCIA_TRANSPORTISTA,DPI_TRANPORTISTA,TIPO_LIC_TRANSPORTISTA,ESTADO_TRANSPORTISTA,ID_EMPLEADO) VALUES(:n,:a,:lic,:dpi,:tlic,NVL(:est,'A'),:emp) RETURNING ID_TRANSPORTISTA INTO :p_id_out",
-            [OracleHelper.P("n",d.NombreTransportista),OracleHelper.P("a",d.ApellidosTransportista),OracleHelper.P("lic",d.LicenciaTransportista),OracleHelper.P("dpi",d.DpiTransportista),OracleHelper.P("tlic",d.TipoLicTransportista),OracleHelper.P("est",d.EstadoTransportista),OracleHelper.PInt("emp",d.IdEmpleado),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_TRANS_INS",
+            [OracleHelper.P("p_n",d.NombreTransportista), OracleHelper.P("p_a",d.ApellidosTransportista),
+             OracleHelper.P("p_lic",d.LicenciaTransportista), OracleHelper.P("p_dpi",d.DpiTransportista),
+             OracleHelper.P("p_tlic",d.TipoLicTransportista), OracleHelper.P("p_est",d.EstadoTransportista),
+             OracleHelper.PInt("p_emp",d.IdEmpleado), OracleHelper.POut("p_id_out")],
+            isStoredProc: true);
         return Created($"api/transportistas/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] TransportistaDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] TransportistaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE TRANSPORTISTA SET ESTADO_TRANSPORTISTA=NVL(:est,ESTADO_TRANSPORTISTA) WHERE ID_TRANSPORTISTA=:p",[OracleHelper.P("est",d.EstadoTransportista),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_TRANS_UPD",
+            [OracleHelper.P("p_est",d.EstadoTransportista), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE TRANSPORTISTA SET ESTADO_TRANSPORTISTA='I' WHERE ID_TRANSPORTISTA=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_TRANS_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record TransportistaDto(string? NombreTransportista, string? ApellidosTransportista, string? LicenciaTransportista, string? DpiTransportista, string? TipoLicTransportista, string? EstadoTransportista, long? IdEmpleado);
@@ -747,20 +964,30 @@ public record TransportistaDto(string? NombreTransportista, string? ApellidosTra
 public class DespachosController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT OD.*,V.PLACA_VEHICULO,T.NOMBRE_TRANSPORTISTA,T.APELLIDOS_TRANSPORTISTA FROM ORDEN_DESPACHADO OD LEFT JOIN VEHICULO V ON V.ID_VEHICULO=OD.ID_VEHICULO LEFT JOIN TRANSPORTISTA T ON T.ID_TRANSPORTISTA=OD.ID_TRANSPORTISTA ORDER BY OD.FECHA_CREA_ORDEN_DESPACHO DESC"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_ORDENES_DESPACHO ORDER BY FECHA_CREA_ORDEN_DESPACHO DESC"));
+
     [HttpPost] public IActionResult Create([FromBody] DespachoDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO ORDEN_DESPACHADO(NOMBRE_ORDEN_DESPACHO,FECHA_CREA_ORDEN_DESPACHO,FECHA_ENTREGA_ORDEN_DESPACHO,PESO_KG_TOTAL_ORDEN_DESPACHO,ESTADO_ORDEN_DESPACHADO,ID_VEHICULO,ID_TRANSPORTISTA,ID_SUCURSAL) VALUES(:nom,SYSDATE,TO_DATE(:fent,'YYYY-MM-DD'),:peso,'P',:veh,:trans,:suc) RETURNING ID_ORDEN_DESPACHO INTO :p_id_out",
-            [OracleHelper.P("nom",d.NombreOrdenDespacho),OracleHelper.P("fent",d.FechaEntregaOrdenDespacho),OracleHelper.PDec("peso",d.PesoKgTotalOrdenDespacho),OracleHelper.PInt("veh",d.IdVehiculo),OracleHelper.PInt("trans",d.IdTransportista),OracleHelper.PInt("suc",d.IdSucursal),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_OD_INS",
+            [OracleHelper.P("p_nom",d.NombreOrdenDespacho), OracleHelper.P("p_fent",d.FechaEntregaOrdenDespacho),
+             OracleHelper.PDec("p_peso",d.PesoKgTotalOrdenDespacho), OracleHelper.PInt("p_veh",d.IdVehiculo),
+             OracleHelper.PInt("p_trans",d.IdTransportista), OracleHelper.PInt("p_suc",d.IdSucursal),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/ordenes-despacho/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] DespachoDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] DespachoDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_DESPACHADO SET ESTADO_ORDEN_DESPACHADO=NVL(:est,ESTADO_ORDEN_DESPACHADO) WHERE ID_ORDEN_DESPACHO=:p",[OracleHelper.P("est",d.EstadoOrdenDespachado),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_OD_UPD",
+            [OracleHelper.P("p_est",d.EstadoOrdenDespachado), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE ORDEN_DESPACHADO SET ESTADO_ORDEN_DESPACHADO='C' WHERE ID_ORDEN_DESPACHO=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_OD_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record DespachoDto(string? NombreOrdenDespacho, string? FechaEntregaOrdenDespacho, decimal? PesoKgTotalOrdenDespacho, string? EstadoOrdenDespachado, long? IdVehiculo, long? IdTransportista, long? IdSucursal);
@@ -770,20 +997,29 @@ public record DespachoDto(string? NombreOrdenDespacho, string? FechaEntregaOrden
 public class DevolucionesVentaController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT DV.*,OV.NUMERO_ORDEN_VENTA FROM DEVOLUCION_VENTA DV LEFT JOIN ORDEN_VENTA OV ON OV.ID_ORDEN_VENTA=DV.ID_ORDEN_VENTA ORDER BY DV.FECHA_DEVOLUCION_VENTA DESC"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_DEVOLUCIONES_VENTA ORDER BY FECHA_DEVOLUCION_VENTA DESC"));
+
     [HttpPost] public IActionResult Create([FromBody] DevolucionDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO DEVOLUCION_VENTA(NUMERO_DEVOLUCION,MOTIVO_DEVOLUCION,FECHA_DEVOLUCION_VENTA,TOTAL_DEVOLUCION_VENTA,ESTADO_DEVOLUCION_VENTA,ID_ORDEN_VENTA) VALUES(:num,:mot,SYSDATE,:tot,'P',:ov) RETURNING ID_DEVOLUCION_VENTA INTO :p_id_out",
-            [OracleHelper.P("num",d.NumeroDevolucion),OracleHelper.P("mot",d.MotivoDevolucion),OracleHelper.PDec("tot",d.TotalDevolucionVenta),OracleHelper.PInt("ov",d.IdOrdenVenta),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_DV_INS",
+            [OracleHelper.P("p_num",d.NumeroDevolucion), OracleHelper.P("p_mot",d.MotivoDevolucion),
+             OracleHelper.PDec("p_tot",d.TotalDevolucionVenta), OracleHelper.PInt("p_ov",d.IdOrdenVenta),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/devoluciones-venta/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] DevolucionDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] DevolucionDto d)
     {
-        _db.ExecuteNonQuery("UPDATE DEVOLUCION_VENTA SET ESTADO_DEVOLUCION_VENTA=NVL(:est,ESTADO_DEVOLUCION_VENTA) WHERE ID_DEVOLUCION_VENTA=:p",[OracleHelper.P("est",d.EstadoDevolucionVenta),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_DV_UPD",
+            [OracleHelper.P("p_est",d.EstadoDevolucionVenta), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE DEVOLUCION_VENTA SET ESTADO_DEVOLUCION_VENTA='C' WHERE ID_DEVOLUCION_VENTA=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_DV_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record DevolucionDto(string? NumeroDevolucion, string? MotivoDevolucion, decimal? TotalDevolucionVenta, string? EstadoDevolucionVenta, long? IdOrdenVenta);
@@ -793,25 +1029,28 @@ public record DevolucionDto(string? NumeroDevolucion, string? MotivoDevolucion, 
 public class EntregasController(OracleHelper db) : BaseController(db)
 {
     [HttpGet] public IActionResult GetAll() =>
-        OkList(_db.ExecuteReader("SELECT E.*,OD.NOMBRE_ORDEN_DESPACHO FROM ENTREGA E LEFT JOIN ORDEN_DESPACHADO OD ON OD.ID_ORDEN_DESPACHO=E.ID_ORDEN_DESPACHO ORDER BY E.FECHA_ENTREGA DESC"));
+        OkList(_db.ExecuteReader("SELECT * FROM VW_ENTREGAS ORDER BY FECHA_ENTREGA DESC"));
+
     [HttpPost] public IActionResult Create([FromBody] EntregaDto d)
     {
-        var id = _db.ExecuteInsert("INSERT INTO ENTREGA(FECHA_ENTREGA,OBSERVACIONES_ENTREGA,ESTADO_ENTREGA,ID_ORDEN_DESPACHO) VALUES(SYSDATE,:obs,'P',:od) RETURNING ID_ENTREGA INTO :p_id_out",
-            [OracleHelper.P("obs",d.ObservacionesEntrega),OracleHelper.PInt("od",d.IdOrdenDespacho),OracleHelper.POut("p_id_out")]);
+        var id = _db.ExecuteInsert("SP_ENT_INS",
+            [OracleHelper.P("p_obs",d.ObservacionesEntrega), OracleHelper.PInt("p_od",d.IdOrdenDespacho),
+             OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/entregas/{id}", new { id });
     }
-    [HttpPut("{id:long}")] public IActionResult Update(long id,[FromBody] EntregaDto d)
+
+    [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] EntregaDto d)
     {
-        _db.ExecuteNonQuery("UPDATE ENTREGA SET ESTADO_ENTREGA=NVL(:est,ESTADO_ENTREGA) WHERE ID_ENTREGA=:p",[OracleHelper.P("est",d.EstadoEntrega),OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_ENT_UPD",
+            [OracleHelper.P("p_est",d.EstadoEntrega), OracleHelper.PInt("p_id",id)],
+            isStoredProc: true);
+        return Ok();
     }
+
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        _db.ExecuteNonQuery("UPDATE ENTREGA SET ESTADO_ENTREGA='C' WHERE ID_ENTREGA=:p",[OracleHelper.PInt("p",id)]);return Ok();
+        _db.ExecuteNonQuery("SP_ENT_DEL", [OracleHelper.PInt("p_id", id)], isStoredProc: true);
+        return Ok();
     }
 }
 public record EntregaDto(string? ObservacionesEntrega, string? EstadoEntrega, long? IdOrdenDespacho);
-
-
-// ── Dashboard ─────────────────────────────────────────────────
-// El controlador de dashboard antiguo se eliminó para evitar conflictos de rutas.
-// Las APIs del dashboard ahora están centralizadas en Controllers/Dashboard/DashboardController.cs

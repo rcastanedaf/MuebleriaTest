@@ -224,6 +224,14 @@ obj/Debug/net9.0/
  System.Xml.XPath.dll
  System.Xml.XPath.XDocument.dll
  WindowsBase.dll
+<NUGET>/
+ oracle.manageddataaccess.core/3.21.3/lib/netstandard2.1/Oracle.ManagedDataAccess.dll
+ system.diagnostics.performancecounter/5.0.1/ref/netstandard2.0/System.Diagnostics.PerformanceCounter.dll
+ system.directoryservices.protocols/5.0.0/ref/netstandard2.0/System.DirectoryServices.Protocols.dll
+ system.directoryservices/5.0.0/ref/netstandard2.0/System.DirectoryServices.dll
+ system.drawing.common/5.0.0/ref/netcoreapp3.0/System.Drawing.Common.dll
+ system.security.permissions/5.0.0/ref/net5.0/System.Security.Permissions.dll
+ system.windows.extensions/5.0.0/ref/netcoreapp3.0/System.Windows.Extensions.dll
 
 [analyzerReferences]
 <DOTNET>/packs/Microsoft.NETCore.App.Ref/9.0.15/analyzers/dotnet/cs/
