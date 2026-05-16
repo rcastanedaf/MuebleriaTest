@@ -9,7 +9,7 @@ namespace MuebleriaCore.Controllers.Dashboard;
 [ApiController]
 public class DashboardController : BaseController
 {
-    public DashboardController(OracleHelper db) : base(db) { }
+    public DashboardController(DashboardOracleHelper db) : base(db) { }
 
     // ── GET /api/dashboard/stats ───────────────────────────────
     [HttpGet("stats")]

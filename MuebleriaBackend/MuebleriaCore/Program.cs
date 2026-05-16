@@ -53,6 +53,7 @@ builder.Services.AddAuthorization();
 
 // ── DI — servicios propios ────────────────────────────────────
 builder.Services.AddSingleton<OracleHelper>();
+builder.Services.AddSingleton<DashboardOracleHelper>();
 builder.Services.AddSingleton<JwtService>();
 
 // ── Swagger ───────────────────────────────────────────────────

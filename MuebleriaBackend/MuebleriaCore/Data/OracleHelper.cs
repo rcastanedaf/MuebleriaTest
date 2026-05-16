@@ -12,9 +12,14 @@ public class OracleHelper
     private readonly string _connStr;
 
     public OracleHelper(IConfiguration config)
+        : this(config, "Oracle")
     {
-        _connStr = config.GetConnectionString("Oracle")
-            ?? throw new InvalidOperationException("ConnectionStrings:Oracle no configurada.");
+    }
+
+    protected OracleHelper(IConfiguration config, string connectionStringName)
+    {
+        _connStr = config.GetConnectionString(connectionStringName)
+            ?? throw new InvalidOperationException($"ConnectionStrings:{connectionStringName} no configurada.");
     }
 
     public OracleConnection GetConnection()
