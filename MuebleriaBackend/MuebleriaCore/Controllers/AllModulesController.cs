@@ -708,8 +708,12 @@ public class ClientesController(OracleHelper db) : BaseController(db)
     [HttpGet] public IActionResult GetAll([FromQuery] string? search = null)
     {
         var sql = "SELECT * FROM VW_CLIENTES"
-                + (search is null ? "" : " WHERE UPPER(RAZON_SOCIAL_CLIENTE) LIKE UPPER(:s) OR NIT_CLIENTE LIKE :s")
-                + " ORDER BY RAZON_SOCIAL_CLIENTE";
+                + (search is null ? "" :
+                   " WHERE UPPER(NVL(NOMBRES_CLIENTE, RAZON_SOCIAL_CLIENTE)) LIKE UPPER(:s)"
+                   + " OR UPPER(NIT_CLIENTE) LIKE UPPER(:s)"
+                   + " OR UPPER(NVL(NUMERO_DOCUMENTO_CLIENTE,'')) LIKE UPPER(:s)"
+                   + " OR UPPER(NVL(EMAIL_CLIENTE,'')) LIKE UPPER(:s)")
+                + " ORDER BY NVL(NOMBRES_CLIENTE, RAZON_SOCIAL_CLIENTE)";
         var q = search is null ? null : $"%{search}%";
         return OkList(_db.ExecuteReader(sql, search is null ? null : [OracleHelper.P("s", q)]));
     }
@@ -717,11 +721,27 @@ public class ClientesController(OracleHelper db) : BaseController(db)
     [HttpPost] public IActionResult Create([FromBody] ClienteDto d)
     {
         var id = _db.ExecuteInsert("SP_CLI_INS",
-            [OracleHelper.P("p_c",d.CodigoCliente), OracleHelper.P("p_rs",d.RazonSocialCliente),
-             OracleHelper.P("p_nit",d.NitCliente), OracleHelper.PDec("p_lim",d.LimiteCreditoCliente),
-             OracleHelper.P("p_tel",d.TelefonoCliente), OracleHelper.P("p_email",d.EmailCliente),
-             OracleHelper.PInt("p_pp",d.PlazoPagoClientes), OracleHelper.P("p_est",d.EstadoCliente),
-             OracleHelper.PInt("p_lp",d.IdListaPrecios), OracleHelper.PInt("p_suc",d.IdSucursal),
+            [OracleHelper.P("p_c",     d.CodigoCliente),
+             OracleHelper.P("p_rs",    d.RazonSocialCliente),
+             OracleHelper.P("p_nit",   d.NitCliente),
+             OracleHelper.PDec("p_lim",d.LimiteCreditoCliente),
+             OracleHelper.P("p_tel",   d.TelefonoCliente),
+             OracleHelper.P("p_email", d.EmailCliente),
+             OracleHelper.PInt("p_pp", d.PlazoPagoClientes),
+             OracleHelper.P("p_est",   d.EstadoCliente),
+             OracleHelper.PInt("p_lp", d.IdListaPrecios),
+             OracleHelper.PInt("p_suc",d.IdSucursal),
+             OracleHelper.P("p_tdoc",  d.TipoDocumentoCliente),
+             OracleHelper.P("p_ndoc",  d.NumeroDocumentoCliente),
+             OracleHelper.P("p_nom",   d.NombresCliente),
+             OracleHelper.P("p_telres",d.TelResidenciaCliente),
+             OracleHelper.P("p_telcel",d.TelCelularCliente),
+             OracleHelper.P("p_dir",   d.DireccionCliente),
+             OracleHelper.P("p_ciu",   d.CiudadCliente),
+             OracleHelper.P("p_dep",   d.DepartamentoCliente),
+             OracleHelper.P("p_pais",  d.PaisCliente),
+             OracleHelper.P("p_prof",  d.ProfesionCliente),
+             OracleHelper.P("p_tpers", d.TipoPersonaCliente),
              OracleHelper.POut("p_id_out")], isStoredProc: true);
         return Created($"api/clientes/{id}", new { id });
     }
@@ -729,15 +749,30 @@ public class ClientesController(OracleHelper db) : BaseController(db)
     [HttpPut("{id:long}")] public IActionResult Update(long id, [FromBody] ClienteDto d)
     {
         _db.ExecuteNonQuery("SP_CLI_UPD",
-            [OracleHelper.P("p_rs",d.RazonSocialCliente), OracleHelper.PDec("p_lim",d.LimiteCreditoCliente),
-             OracleHelper.P("p_est",d.EstadoCliente), OracleHelper.PInt("p_id",id)],
+            [OracleHelper.P("p_rs",    d.RazonSocialCliente),
+             OracleHelper.PDec("p_lim",d.LimiteCreditoCliente),
+             OracleHelper.P("p_est",   d.EstadoCliente),
+             OracleHelper.P("p_tel",   d.TelefonoCliente),
+             OracleHelper.P("p_email", d.EmailCliente),
+             OracleHelper.P("p_tdoc",  d.TipoDocumentoCliente),
+             OracleHelper.P("p_ndoc",  d.NumeroDocumentoCliente),
+             OracleHelper.P("p_nom",   d.NombresCliente),
+             OracleHelper.P("p_telres",d.TelResidenciaCliente),
+             OracleHelper.P("p_telcel",d.TelCelularCliente),
+             OracleHelper.P("p_dir",   d.DireccionCliente),
+             OracleHelper.P("p_ciu",   d.CiudadCliente),
+             OracleHelper.P("p_dep",   d.DepartamentoCliente),
+             OracleHelper.P("p_pais",  d.PaisCliente),
+             OracleHelper.P("p_prof",  d.ProfesionCliente),
+             OracleHelper.P("p_tpers", d.TipoPersonaCliente),
+             OracleHelper.PInt("p_id", id)],
             isStoredProc: true);
         return Ok();
     }
 
     [HttpDelete("{id:long}")] public IActionResult Delete(long id)
     {
-        // Validación de integridad: verificar si el cliente tiene órdenes
+        // Validación: no eliminar si tiene compras (PDF seccion 1)
         var count = Convert.ToInt32(_db.ExecuteScalar(
             "SELECT COUNT(*) FROM VW_ORDENES_VENTA WHERE ID_CLIENTE = :p",
             [OracleHelper.PInt("p", id)]));
@@ -748,7 +783,18 @@ public class ClientesController(OracleHelper db) : BaseController(db)
         return Ok();
     }
 }
-public record ClienteDto(string? CodigoCliente, string? RazonSocialCliente, string? NitCliente, decimal? LimiteCreditoCliente, string? TelefonoCliente, string? EmailCliente, int? PlazoPagoClientes, string? EstadoCliente, long? IdListaPrecios, long? IdSucursal);
+public record ClienteDto(
+    string? CodigoCliente, string? RazonSocialCliente, string? NitCliente,
+    decimal? LimiteCreditoCliente, string? TelefonoCliente, string? EmailCliente,
+    int? PlazoPagoClientes, string? EstadoCliente,
+    long? IdListaPrecios, long? IdSucursal,
+    // Campos requeridos por PDF seccion 1
+    string? TipoDocumentoCliente, string? NumeroDocumentoCliente,
+    string? NombresCliente, string? TelResidenciaCliente,
+    string? TelCelularCliente, string? DireccionCliente,
+    string? CiudadCliente, string? DepartamentoCliente,
+    string? PaisCliente, string? ProfesionCliente,
+    string? TipoPersonaCliente);
 
 
 [Route("api/lista-precios")]

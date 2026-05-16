@@ -87,7 +87,7 @@ export default function App() {
         setUser(null);
         setAllowedModulesRaw(null);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line
 
   const handleLogout = () => {
     authRepository.logout();

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MuebleriaCore.Data;
+using MuebleriaCore.Services;
 using Oracle.ManagedDataAccess.Client;
 
 namespace MuebleriaCore.Controllers.Ventas;
@@ -8,7 +9,12 @@ namespace MuebleriaCore.Controllers.Ventas;
 [Route("api/ordenes-venta")]
 public class OrdenesVentaController : BaseController
 {
-    public OrdenesVentaController(OracleHelper db) : base(db) { }
+    private readonly EmailService _email;
+
+    public OrdenesVentaController(OracleHelper db, EmailService email) : base(db)
+    {
+        _email = email;
+    }
 
     // ── GET /api/ordenes-venta ────────────────────────────────
     [HttpGet]
@@ -91,12 +97,13 @@ public class OrdenesVentaController : BaseController
             using (var cmd = new OracleCommand("SP_OV_INS", conn)
                 { CommandType = System.Data.CommandType.StoredProcedure, Transaction = txn, BindByName = true })
             {
-                cmd.Parameters.Add(OracleHelper.P("p_num",   numOV));
-                cmd.Parameters.Add(OracleHelper.PDec("p_sub",  dto.Subtotal));
-                cmd.Parameters.Add(OracleHelper.PDec("p_imp",  dto.Impuesto));
-                cmd.Parameters.Add(OracleHelper.PDec("p_tot",  dto.Total));
-                cmd.Parameters.Add(OracleHelper.PInt("p_cli",   dto.ClienteId));
-                cmd.Parameters.Add(OracleHelper.PInt("p_ucrea", CurrentUserId));
+                cmd.Parameters.Add(OracleHelper.P("p_num",    numOV));
+                cmd.Parameters.Add(OracleHelper.PDec("p_sub", dto.Subtotal));
+                cmd.Parameters.Add(OracleHelper.PDec("p_imp", dto.Impuesto));
+                cmd.Parameters.Add(OracleHelper.PDec("p_tot", dto.Total));
+                cmd.Parameters.Add(OracleHelper.PInt("p_cli",    dto.ClienteId));
+                cmd.Parameters.Add(OracleHelper.PInt("p_ucrea",  CurrentUserId));
+                cmd.Parameters.Add(OracleHelper.P("p_metodo",   dto.MetodoPago ?? "card"));
                 cmd.Parameters.Add(OracleHelper.POut("p_id_out"));
                 cmd.ExecuteNonQuery();
                 idOV = OracleHelper.ConvertOracleToLong(cmd.Parameters["p_id_out"].Value);
@@ -124,6 +131,21 @@ public class OrdenesVentaController : BaseController
             }
 
             txn.Commit();
+
+            // Send confirmation email asynchronously (fire-and-forget; order is already committed)
+            _ = Task.Run(async () =>
+            {
+                var dtCli = _db.ExecuteReader(
+                    "SELECT EMAIL_CLIENTE, NVL(NOMBRES_CLIENTE, RAZON_SOCIAL_CLIENTE) AS NOM FROM CLIENTE WHERE ID_CLIENTE = :p",
+                    [OracleHelper.PInt("p", dto.ClienteId)]);
+                if (dtCli.Rows.Count > 0)
+                {
+                    var emailCli = dtCli.Rows[0]["EMAIL_CLIENTE"]?.ToString() ?? "";
+                    var nomCli   = dtCli.Rows[0]["NOM"]?.ToString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(emailCli))
+                        await _email.SendOrderConfirmationAsync(emailCli, nomCli, numOV, dto.Total);
+                }
+            });
 
             return Ok(new
             {

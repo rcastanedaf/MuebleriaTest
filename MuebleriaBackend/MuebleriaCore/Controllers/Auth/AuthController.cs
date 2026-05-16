@@ -105,11 +105,21 @@ public class AuthController : BaseController
             // 1) INSERT CLIENTE via SP_REG_INS_CLIENTE
             using var cmdC = new OracleCommand("SP_REG_INS_CLIENTE", conn)
                 { CommandType = System.Data.CommandType.StoredProcedure, Transaction = txn, BindByName = true };
-            cmdC.Parameters.Add(OracleHelper.P("p_cod",   "CLI-" + DateTime.Now.Ticks.ToString()[^8..]));
-            cmdC.Parameters.Add(OracleHelper.P("p_nom",   dto.Name));
-            cmdC.Parameters.Add(OracleHelper.P("p_nit",   dto.Nit ?? "CF"));
-            cmdC.Parameters.Add(OracleHelper.P("p_tel",   dto.Phone ?? ""));
-            cmdC.Parameters.Add(OracleHelper.P("p_email", dto.Email));
+            cmdC.Parameters.Add(OracleHelper.P("p_cod",    "CLI-" + DateTime.Now.Ticks.ToString()[^8..]));
+            cmdC.Parameters.Add(OracleHelper.P("p_nom",    dto.Name));
+            cmdC.Parameters.Add(OracleHelper.P("p_nit",    dto.Nit ?? "CF"));
+            cmdC.Parameters.Add(OracleHelper.P("p_tel",    dto.Phone ?? ""));
+            cmdC.Parameters.Add(OracleHelper.P("p_email",  dto.Email));
+            cmdC.Parameters.Add(OracleHelper.P("p_tdoc",   dto.TipoDocumento ?? "NIT"));
+            cmdC.Parameters.Add(OracleHelper.P("p_ndoc",   dto.NumeroDocumento ?? dto.Nit ?? "CF"));
+            cmdC.Parameters.Add(OracleHelper.P("p_telres", dto.TelefonoResidencia ?? dto.Phone ?? ""));
+            cmdC.Parameters.Add(OracleHelper.P("p_telcel", dto.TelefonoCelular ?? dto.Phone ?? ""));
+            cmdC.Parameters.Add(OracleHelper.P("p_dir",    dto.Address ?? ""));
+            cmdC.Parameters.Add(OracleHelper.P("p_ciu",    dto.City ?? ""));
+            cmdC.Parameters.Add(OracleHelper.P("p_dep",    dto.Departamento ?? ""));
+            cmdC.Parameters.Add(OracleHelper.P("p_pais",   dto.Country ?? "Guatemala"));
+            cmdC.Parameters.Add(OracleHelper.P("p_prof",   dto.Profesion ?? ""));
+            cmdC.Parameters.Add(OracleHelper.P("p_tpers",  dto.TipoPersona ?? "N"));
             cmdC.Parameters.Add(OracleHelper.POut("p_id_out"));
             cmdC.ExecuteNonQuery();
             var newClienteId = OracleHelper.ConvertOracleToLong(cmdC.Parameters["p_id_out"].Value);
@@ -194,10 +204,49 @@ public class AuthController : BaseController
         if (dt.Rows.Count == 0) return NotFound();
         return Ok(OracleHelper.ToList(dt)[0]);
     }
+
+    // ── PUT /api/auth/profile — edición self-service cliente ──
+    [HttpPut("profile")]
+    public IActionResult UpdateProfile([FromBody] ProfileUpdateDto dto)
+    {
+        try
+        {
+            // Look up idCliente via the login view (join CLIENTE on email)
+            var raw = _db.ExecuteScalar(
+                "SELECT ID_CLIENTE FROM VW_LOGIN_USUARIO WHERE ID_USUARIO = :p_id AND ROWNUM = 1",
+                [OracleHelper.PInt("p_id", CurrentUserId)]);
+
+            if (raw == null || raw == DBNull.Value)
+                return BadRequest(new { message = "Solo clientes pueden editar su perfil." });
+
+            var idCliente = OracleHelper.ConvertOracleToLong(raw);
+
+            _db.ExecuteNonQuery("SP_CLI_UPD_PERFIL", [
+                OracleHelper.PInt("p_id",  idCliente),
+                OracleHelper.P("p_nom",    dto.Nombre),
+                OracleHelper.P("p_email",  dto.Email),
+                OracleHelper.P("p_tel",    dto.Telefono),
+                OracleHelper.P("p_dir",    dto.Direccion),
+                OracleHelper.P("p_ciu",    dto.Ciudad),
+                OracleHelper.P("p_pais",   dto.Pais),
+            ], isStoredProc: true);
+
+            return Ok(new { message = "Perfil actualizado." });
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
+    }
 }
 
 public record LoginDto(string Email, string Password);
+public record ProfileUpdateDto(
+    string? Nombre, string? Email, string? Telefono,
+    string? Direccion, string? Ciudad, string? Pais);
 public record RegisterDto(
     string Name, string Email, string Password,
     string? Nit, string? Phone, string? Address,
-    string? City, string? Country);
+    string? City, string? Country,
+    // Campos adicionales requeridos por PDF seccion 1
+    string? TipoDocumento, string? NumeroDocumento,
+    string? TelefonoResidencia, string? TelefonoCelular,
+    string? Departamento, string? Profesion,
+    string? TipoPersona);

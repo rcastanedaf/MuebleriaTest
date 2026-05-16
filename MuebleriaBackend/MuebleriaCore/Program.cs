@@ -55,6 +55,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddSingleton<OracleHelper>();
 builder.Services.AddSingleton<DashboardOracleHelper>();
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddTransient<MuebleriaCore.Services.EmailService>();
 
 // ── Swagger ───────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();

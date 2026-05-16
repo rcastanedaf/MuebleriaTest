@@ -1,7 +1,7 @@
 // core/api/apiClient.ts
 // HTTP client — apunta al backend VB.NET + Oracle 21c
 
-const API_BASE_URL =
+export const API_BASE_URL =
   (process.env.REACT_APP_API_URL as string) ?? "https://localhost:56935/api";
 
 const TOKEN_KEY   = "alpes_token";

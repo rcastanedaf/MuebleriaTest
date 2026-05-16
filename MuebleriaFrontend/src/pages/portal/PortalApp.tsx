@@ -10,6 +10,7 @@ import { checkoutRepository } from "../../features/checkout/domain/checkoutDomai
 import { formatPrice, inStock } from "../../features/catalog/domain/catalogDomain";
 import { formatQTZ } from "../../shared/utils";
 import type { Articulo, OrderDetail, OrderDetailItem, OrderResult } from "../../core/types";
+import { API_BASE_URL, apiClient } from "../../core/api/apiClient";
 
 interface Props { showToast: (msg: string, type?: "success" | "error") => void; }
 
@@ -63,6 +64,9 @@ export function PortalApp({ showToast }: Props) {
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [orderDetailLoading, setOrderDetailLoading] = useState(false);
   const [orderDetailError, setOrderDetailError] = useState<string | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ nombre:"", email:"", telefono:"", direccion:"", ciudad:"", pais:"" });
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const loadOrders = useCallback(async () => {
     if (!user || !user.idCliente) {
@@ -88,6 +92,31 @@ export function PortalApp({ showToast }: Props) {
   const handleOrderRefresh = async () => {
     await loadOrders();
     setView("account");
+  };
+
+  const openEditProfile = () => {
+    setProfileForm({
+      nombre:    user?.name ?? "",
+      email:     user?.email ?? "",
+      telefono:  "",
+      direccion: "",
+      ciudad:    "",
+      pais:      "",
+    });
+    setEditingProfile(true);
+  };
+
+  const saveProfile = async () => {
+    setProfileSaving(true);
+    try {
+      await apiClient.put("/auth/profile", profileForm);
+      showToast(lang === "es" ? "Perfil actualizado" : "Profile updated", "success");
+      setEditingProfile(false);
+    } catch (e: any) {
+      showToast(e.message ?? "Error al guardar", "error");
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const loadOrderDetail = async (orderId: number) => {
@@ -253,17 +282,32 @@ export function PortalApp({ showToast }: Props) {
                   background:"var(--bg3)", border:"1px solid var(--sand)",
                   borderRadius:"var(--radius)", overflow:"hidden", cursor:"pointer",
                 }} onClick={() => setSelectedProduct(p)}>
-                  {/* Placeholder image */}
-                  <div style={{
-                    height:120, background:`linear-gradient(135deg, #e8dcc8 0%, #d4c5a9 100%)`,
-                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:36,
-                  }}>
-                    {p.tipoArticulo === "Exterior" ? "🌿" : "🪑"}
-                  </div>
+                  {/* Foto o placeholder según PDF seccion 3 */}
+                  {p.tieneFoto ? (
+                    <img src={`${API_BASE_URL}/articulos/${p.idArticulo}/foto`} alt={p.nombreArticulo}
+                      style={{ width:"100%", height:120, objectFit:"cover" }} />
+                  ) : (
+                    <div style={{
+                      height:120, background:`linear-gradient(135deg, #e8dcc8 0%, #d4c5a9 100%)`,
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:36,
+                    }}>
+                      {p.tipoArticulo === "Exterior" ? "🌿" : "🪑"}
+                    </div>
+                  )}
                   <div style={{ padding:"10px" }}>
-                    <p style={{ fontSize:12, fontWeight:500, marginBottom:4, lineHeight:1.3 }}>
+                    {/* Referencia - requerida por PDF seccion 3 */}
+                    <p style={{ fontSize:10, color:"var(--txtMuted)", marginBottom:2, fontFamily:"monospace" }}>
+                      {p.codigoArticulo}
+                    </p>
+                    <p style={{ fontSize:12, fontWeight:500, marginBottom:2, lineHeight:1.3 }}>
                       {p.nombreArticulo}
                     </p>
+                    {/* Material - requerido por PDF seccion 3 */}
+                    {p.materialArticulo && (
+                      <p style={{ fontSize:11, color:"var(--txtMuted)", marginBottom:4 }}>
+                        {p.materialArticulo}
+                      </p>
+                    )}
                     <p style={{ fontSize:13, fontWeight:600, color:"var(--olive)", marginBottom:8 }}>
                       {p.precio ? formatPrice(p.precio) : "—"}
                     </p>
@@ -401,6 +445,12 @@ export function PortalApp({ showToast }: Props) {
                 </div>
               </section>
 
+              <section style={{ marginBottom:16 }}>
+                <Button variant="ghost" fullWidth onClick={openEditProfile}>
+                  {lang === "es" ? "✏️ Editar mis datos" : lang === "en" ? "✏️ Edit profile" : "✏️ Modifier le profil"}
+                </Button>
+              </section>
+
               <Button variant="ghost" fullWidth onClick={logout}>Cerrar sesión</Button>
             </>
           ) : (
@@ -416,19 +466,69 @@ export function PortalApp({ showToast }: Props) {
       )}
 
       {/* Product detail modal */}
-      <Modal isOpen={!!selectedProduct} onClose={() => setSelectedProduct(null)} title={selectedProduct?.nombreArticulo} width={400}>
+      <Modal isOpen={!!selectedProduct} onClose={() => setSelectedProduct(null)} title={selectedProduct?.nombreArticulo} width={420}>
         {selectedProduct && (
           <div>
-            <div style={{ height:160, background:"linear-gradient(135deg,#e8dcc8,#d4c5a9)", borderRadius:"var(--radius)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:60, marginBottom:16 }}>
-              {selectedProduct.tipoArticulo === "Exterior" ? "🌿" : "🪑"}
-            </div>
+            {/* Foto del producto */}
+            {selectedProduct.tieneFoto ? (
+              <img src={`${API_BASE_URL}/articulos/${selectedProduct.idArticulo}/foto`} alt={selectedProduct.nombreArticulo}
+                style={{ width:"100%", height:180, objectFit:"cover", borderRadius:"var(--radius)", marginBottom:16 }} />
+            ) : (
+              <div style={{ height:160, background:"linear-gradient(135deg,#e8dcc8,#d4c5a9)", borderRadius:"var(--radius)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:60, marginBottom:16 }}>
+                {selectedProduct.tipoArticulo === "Exterior" ? "🌿" : "🪑"}
+              </div>
+            )}
+
+            {/* Referencia */}
+            <p style={{ fontSize:11, color:"var(--txtMuted)", fontFamily:"monospace", marginBottom:4 }}>
+              Ref: {selectedProduct.codigoArticulo}
+            </p>
+
+            {/* Descripción */}
             <p style={{ fontSize:13, color:"var(--txtMid)", marginBottom:12, lineHeight:1.7 }}>
               {selectedProduct.descripcionArticulo ?? "Sin descripción disponible."}
             </p>
+
+            {/* Badges tipo y categoría */}
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:12 }}>
               {selectedProduct.tipoArticulo && <Badge>{selectedProduct.tipoArticulo}</Badge>}
               {selectedProduct.nombreCategoriaArticulo && <Badge variant="muted">{selectedProduct.nombreCategoriaArticulo}</Badge>}
             </div>
+
+            {/* Ficha técnica: material, color, dimensiones, peso */}
+            <div style={{ background:"var(--bg2)", borderRadius:"var(--radius)", padding:"12px 14px", marginBottom:16, fontSize:12 }}>
+              {selectedProduct.materialArticulo && (
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                  <span style={{ color:"var(--txtMuted)" }}>{lang==="es" ? "Material" : "Material"}</span>
+                  <span style={{ fontWeight:500 }}>{selectedProduct.materialArticulo}</span>
+                </div>
+              )}
+              {selectedProduct.colorArticulo && (
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                  <span style={{ color:"var(--txtMuted)" }}>{lang==="es" ? "Color" : "Color"}</span>
+                  <span style={{ fontWeight:500 }}>{selectedProduct.colorArticulo}</span>
+                </div>
+              )}
+              {(selectedProduct.altoArticulo || selectedProduct.anchoArticulo || selectedProduct.profundidadArticulo) && (
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                  <span style={{ color:"var(--txtMuted)" }}>{lang==="es" ? "Dimensiones (cm)" : "Dimensions (cm)"}</span>
+                  <span style={{ fontWeight:500 }}>
+                    {[
+                      selectedProduct.altoArticulo   ? `A:${selectedProduct.altoArticulo}`   : null,
+                      selectedProduct.anchoArticulo  ? `An:${selectedProduct.anchoArticulo}` : null,
+                      selectedProduct.profundidadArticulo ? `P:${selectedProduct.profundidadArticulo}` : null,
+                    ].filter(Boolean).join(" · ")}
+                  </span>
+                </div>
+              )}
+              {selectedProduct.pesoArticulo && (
+                <div style={{ display:"flex", justifyContent:"space-between" }}>
+                  <span style={{ color:"var(--txtMuted)" }}>{lang==="es" ? "Peso (g)" : "Weight (g)"}</span>
+                  <span style={{ fontWeight:500 }}>{selectedProduct.pesoArticulo.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+
             {selectedProduct.precio && (
               <p style={{ fontSize:22, fontWeight:700, color:"var(--olive)", marginBottom:16 }}>
                 {formatPrice(selectedProduct.precio)}
@@ -440,6 +540,36 @@ export function PortalApp({ showToast }: Props) {
             </Button>
           </div>
         )}
+      </Modal>
+
+      {/* Profile edit modal */}
+      <Modal isOpen={editingProfile} onClose={() => setEditingProfile(false)}
+        title={lang === "es" ? "Editar mis datos" : lang === "en" ? "Edit profile" : "Modifier le profil"}
+        width={380}>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <Input label={lang==="es" ? "Nombre" : "Name"} value={profileForm.nombre}
+            onChange={v => setProfileForm(f => ({...f, nombre: v}))} />
+          <Input label="Email" type="email" value={profileForm.email}
+            onChange={v => setProfileForm(f => ({...f, email: v}))} />
+          <Input label={lang==="es" ? "Teléfono" : "Phone"} value={profileForm.telefono}
+            onChange={v => setProfileForm(f => ({...f, telefono: v}))} />
+          <Input label={lang==="es" ? "Dirección" : "Address"} value={profileForm.direccion}
+            onChange={v => setProfileForm(f => ({...f, direccion: v}))} />
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <Input label={lang==="es" ? "Ciudad" : "City"} value={profileForm.ciudad}
+              onChange={v => setProfileForm(f => ({...f, ciudad: v}))} />
+            <Input label={lang==="es" ? "País" : "Country"} value={profileForm.pais}
+              onChange={v => setProfileForm(f => ({...f, pais: v}))} />
+          </div>
+          <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+            <Button variant="ghost" onClick={() => setEditingProfile(false)}>
+              {lang==="es" ? "Cancelar" : "Cancel"}
+            </Button>
+            <Button loading={profileSaving} onClick={saveProfile}>
+              {lang==="es" ? "Guardar" : "Save"}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Auth modal */}

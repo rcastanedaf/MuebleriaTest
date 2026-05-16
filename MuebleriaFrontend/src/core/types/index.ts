@@ -117,6 +117,10 @@ export interface Articulo {
   stockMinimo?: number; stockMaximo?: number; pesoArticulo?: number;
   estadoArticulo: EstadoAI; idCategoriaArticulo?: number;
   nombreCategoriaArticulo?: string;
+  // Campos requeridos por PDF seccion 2
+  materialArticulo?: string; colorArticulo?: string;
+  altoArticulo?: number; anchoArticulo?: number; profundidadArticulo?: number;
+  fotoNombreArticulo?: string; fotoTipoArticulo?: string; tieneFoto?: number;
   // portal fields (joined)
   stockDisponible?: number; precio?: number;
 }
@@ -168,6 +172,13 @@ export interface Cliente {
   nitCliente: string; limiteCreditoCliente?: number; telefonoCliente?: string;
   emailCliente?: string; plazoPagoClientes?: number;
   estadoCliente: EstadoAI; idListaPrecios?: number; nombreListaPrecios?: string;
+  // Campos requeridos por PDF seccion 1
+  tipoDocumentoCliente?: string; numeroDocumentoCliente?: string;
+  nombresCliente?: string; telResidenciaCliente?: string;
+  telCelularCliente?: string; direccionCliente?: string;
+  ciudadCliente?: string; departamentoCliente?: string;
+  paisCliente?: string; profesionCliente?: string;
+  tipoPersonaCliente?: "N" | "J";
 }
 export interface ListaPrecios {
   idListaPrecios: number; nombreListaPrecios: string;
@@ -257,6 +268,11 @@ export interface LoginPayload    { email: string; password: string; }
 export interface RegisterPayload {
   name: string; email: string; password: string; nit: string;
   phone?: string; address?: string; city?: string; country?: string;
+  // Campos adicionales requeridos por PDF seccion 1
+  tipoDocumento?: string; numeroDocumento?: string;
+  telefonoResidencia?: string; telefonoCelular?: string;
+  departamento?: string; profesion?: string;
+  tipoPersona?: "N" | "J";
 }
 export interface AuthResponse    { token: string; user: AuthUser; }
 export interface AuthUser {

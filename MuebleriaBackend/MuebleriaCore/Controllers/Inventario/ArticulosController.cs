@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MuebleriaCore.Data;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 
 namespace MuebleriaCore.Controllers.Inventario;
 
@@ -56,6 +57,8 @@ public class ArticulosController : BaseController
     {
         if (string.IsNullOrWhiteSpace(dto.NombreArticulo))
             return BadRequest(new { message = "NombreArticulo es requerido." });
+        if (string.IsNullOrWhiteSpace(dto.CodigoArticulo))
+            return BadRequest(new { message = "Referencia (CodigoArticulo) es requerida." });
 
         try
         {
@@ -73,6 +76,11 @@ public class ArticulosController : BaseController
                 OracleHelper.P("p_lote",  dto.ManejaLoteArticulo),
                 OracleHelper.P("p_serie", dto.ManejaSerieArticulo),
                 OracleHelper.PInt("p_cat", dto.IdCategoriaArticulo),
+                OracleHelper.P("p_mat",   dto.MaterialArticulo),
+                OracleHelper.P("p_color", dto.ColorArticulo),
+                OracleHelper.PDec("p_alto",  dto.AltoArticulo),
+                OracleHelper.PDec("p_ancho", dto.AnchoArticulo),
+                OracleHelper.PDec("p_prof",  dto.ProfundidadArticulo),
                 OracleHelper.POut("p_id_out"),
             ], isStoredProc: true);
             return Created($"api/articulos/{newId}", new { idArticulo = newId });
@@ -97,6 +105,11 @@ public class ArticulosController : BaseController
                 OracleHelper.PDec("p_smax", dto.StockMaximo),
                 OracleHelper.P("p_est",  dto.EstadoArticulo),
                 OracleHelper.PInt("p_cat", dto.IdCategoriaArticulo),
+                OracleHelper.P("p_mat",   dto.MaterialArticulo),
+                OracleHelper.P("p_color", dto.ColorArticulo),
+                OracleHelper.PDec("p_alto",  dto.AltoArticulo),
+                OracleHelper.PDec("p_ancho", dto.AnchoArticulo),
+                OracleHelper.PDec("p_prof",  dto.ProfundidadArticulo),
                 OracleHelper.PInt("p_id",  id),
             ], isStoredProc: true);
 
@@ -129,6 +142,58 @@ public class ArticulosController : BaseController
             isStoredProc: true);
         return Ok(new { message = "Artículo desactivado." });
     }
+
+    // ── POST /api/articulos/{id}/foto ─────────────────────────
+    [HttpPost("{id:long}/foto")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadFoto(long id, IFormFile foto)
+    {
+        if (foto == null || foto.Length == 0)
+            return BadRequest(new { message = "No se recibió ningún archivo." });
+
+        using var ms = new System.IO.MemoryStream();
+        await foto.CopyToAsync(ms);
+        var bytes = ms.ToArray();
+
+        try
+        {
+            using var conn = _db.GetConnection();
+            using var cmd  = new OracleCommand("SP_ART_UPD_FOTO", conn)
+            {
+                CommandType = System.Data.CommandType.StoredProcedure,
+                BindByName  = true
+            };
+            cmd.Parameters.Add(OracleHelper.PInt("p_id", id));
+            cmd.Parameters.Add(new OracleParameter("p_foto", OracleDbType.Blob) { Value = bytes });
+            cmd.Parameters.Add(OracleHelper.P("p_nombre", foto.FileName));
+            cmd.Parameters.Add(OracleHelper.P("p_tipo",   foto.ContentType));
+            cmd.ExecuteNonQuery();
+            return Ok(new { message = "Foto guardada." });
+        }
+        catch (OracleException ex) { return HandleOracleError(ex); }
+    }
+
+    // ── GET /api/articulos/{id}/foto ──────────────────────────
+    [HttpGet("{id:long}/foto")]
+    [AllowAnonymous]
+    public IActionResult GetFoto(long id)
+    {
+        using var conn = _db.GetConnection();
+        using var cmd  = new OracleCommand(
+            "SELECT FOTO_ARTICULO, FOTO_TIPO_ARTICULO FROM ARTICULO WHERE ID_ARTICULO = :p_id", conn)
+        { BindByName = true };
+        cmd.Parameters.Add(OracleHelper.PInt("p_id", id));
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read() || reader.IsDBNull(0))
+            return NotFound();
+
+        var blob        = reader.GetOracleBlob(0);
+        var bytes       = new byte[blob.Length];
+        blob.Read(bytes, 0, bytes.Length);
+        var contentType = !reader.IsDBNull(1) ? reader.GetString(1) : "image/jpeg";
+        return File(bytes, contentType);
+    }
 }
 
 public record ArticuloDto(
@@ -138,4 +203,8 @@ public record ArticuloDto(
     decimal? StockMinimo,   decimal? StockMaximo,
     string? EstadoArticulo, string? ManejaLoteArticulo,
     string? ManejaSerieArticulo, long? IdCategoriaArticulo,
-    decimal? StockDisponible, decimal? Precio);
+    decimal? StockDisponible, decimal? Precio,
+    // Campos requeridos por PDF seccion 2
+    string? MaterialArticulo, string? ColorArticulo,
+    decimal? AltoArticulo, decimal? AnchoArticulo,
+    decimal? ProfundidadArticulo);

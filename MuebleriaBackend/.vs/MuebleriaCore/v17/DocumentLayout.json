@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\rcast\\Documents\\UMG TAREAS\\SEPTIMO SEMESTRE\\Base de Datos\\MuebleriaTest\\MuebleriaTest\\MuebleriaBackend\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\documents\\umg tareas\\septimo semestre\\base de datos\\muebleriatest\\muebleriatest\\muebleriabackend\\muebleriacore\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+      "AbsoluteMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|c:\\users\\rcast\\documents\\umg tareas\\septimo semestre\\base de datos\\muebleriatest\\muebleriatest\\muebleriabackend\\muebleriacore\\muebleriacore.csproj.lscache||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}|MuebleriaCore\\MuebleriaCore.csproj|solutionrelative:muebleriacore\\muebleriacore.csproj.lscache||{8B382828-6202-11D1-8870-0000F87579D2}"
     }
   ],
   "DocumentGroupContainers": [
@@ -19,14 +19,14 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "appsettings.json",
-              "DocumentMoniker": "C:\\Users\\rcast\\Documents\\UMG TAREAS\\SEPTIMO SEMESTRE\\Base de Datos\\MuebleriaTest\\MuebleriaTest\\MuebleriaBackend\\MuebleriaCore\\appsettings.json",
-              "RelativeDocumentMoniker": "MuebleriaCore\\appsettings.json",
-              "ToolTip": "C:\\Users\\rcast\\Documents\\UMG TAREAS\\SEPTIMO SEMESTRE\\Base de Datos\\MuebleriaTest\\MuebleriaTest\\MuebleriaBackend\\MuebleriaCore\\appsettings.json",
-              "RelativeToolTip": "MuebleriaCore\\appsettings.json",
+              "Title": "MuebleriaCore.csproj.lscache",
+              "DocumentMoniker": "C:\\Users\\rcast\\Documents\\UMG TAREAS\\SEPTIMO SEMESTRE\\Base de Datos\\MuebleriaTest\\MuebleriaTest\\MuebleriaBackend\\MuebleriaCore\\MuebleriaCore.csproj.lscache",
+              "RelativeDocumentMoniker": "MuebleriaCore\\MuebleriaCore.csproj.lscache",
+              "ToolTip": "C:\\Users\\rcast\\Documents\\UMG TAREAS\\SEPTIMO SEMESTRE\\Base de Datos\\MuebleriaTest\\MuebleriaTest\\MuebleriaBackend\\MuebleriaCore\\MuebleriaCore.csproj.lscache",
+              "RelativeToolTip": "MuebleriaCore\\MuebleriaCore.csproj.lscache",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-05-16T02:18:50.275Z",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-05-16T06:50:57.507Z",
               "EditorCaption": ""
             }
           ]
