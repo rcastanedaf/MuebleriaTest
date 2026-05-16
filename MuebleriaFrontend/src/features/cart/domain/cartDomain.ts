@@ -9,14 +9,19 @@ export const getTax      = (items: CartItem[]) => getSubtotal(items) * TAX;
 export const getTotal    = (items: CartItem[]) => getSubtotal(items) + getTax(items);
 export const getTotalQty = (items: CartItem[]) => items.reduce((s,i) => s + i.qty, 0);
 
+const getArticuloPrice = (p: Articulo) =>
+  p.precio ?? (p as any).precio ?? (p as any).precioListaPreciosDet ?? 0;
+const getArticuloStock = (p: Articulo) =>
+  p.stockDisponible ?? (p as any).cantidadDiponibleStockArticulo ?? (p as any).stock_disponible ?? 0;
+
 export function addItem(items: CartItem[], p: Articulo): CartItem[] {
   const ex = items.find(i => i.idArticulo === p.idArticulo);
   if (ex) return items.map(i => i.idArticulo === p.idArticulo ? { ...i, qty: i.qty + 1 } : i);
   return [...items, {
     cartId: ++_id, idArticulo: p.idArticulo,
     codigoArticulo: p.codigoArticulo, nombreArticulo: p.nombreArticulo,
-    tipoArticulo: p.tipoArticulo, precio: p.precio ?? 0,
-    qty: 1, stock: p.stockDisponible ?? 0,
+    tipoArticulo: p.tipoArticulo, precio: getArticuloPrice(p),
+    qty: 1, stock: getArticuloStock(p),
   }];
 }
 export const removeItem    = (items: CartItem[], cartId: number) => items.filter(i => i.cartId !== cartId);

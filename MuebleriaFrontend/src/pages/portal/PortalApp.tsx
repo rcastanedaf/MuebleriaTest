@@ -39,6 +39,8 @@ const T: Record<string, Record<"es"|"en"|"fr", string>> = {
   orderOk:   { es: "¡Orden confirmada!", en: "Order confirmed!", fr: "Commande confirmée!"},
 };
 const t = (key: string, lang: "es"|"en"|"fr") => T[key]?.[lang] ?? key;
+const getArticuloPrice = (p: Articulo) =>
+  p.precio ?? (p as any).precio ?? (p as any).precioListaPreciosDet ?? 0;
 const orderStateLabel = (state: string, lang: "es"|"en"|"fr") => {
   return state === "P" ? (lang === "es" ? "Pendiente" : lang === "en" ? "Pending" : "En attente")
     : state === "A" ? (lang === "es" ? "Aprobada" : lang === "en" ? "Approved" : "Approuvée")
@@ -309,7 +311,7 @@ export function PortalApp({ showToast }: Props) {
                       </p>
                     )}
                     <p style={{ fontSize:13, fontWeight:600, color:"var(--olive)", marginBottom:8 }}>
-                      {p.precio ? formatPrice(p.precio) : "—"}
+                      {getArticuloPrice(p) ? formatPrice(getArticuloPrice(p)) : "—"}
                     </p>
                     {inStock(p)
                       ? <Button size="sm" fullWidth onClick={e => { e.stopPropagation(); handleAddToCart(p); }}>
@@ -529,11 +531,11 @@ export function PortalApp({ showToast }: Props) {
               )}
             </div>
 
-            {selectedProduct.precio && (
+            {getArticuloPrice(selectedProduct) ? (
               <p style={{ fontSize:22, fontWeight:700, color:"var(--olive)", marginBottom:16 }}>
-                {formatPrice(selectedProduct.precio)}
+                {formatPrice(getArticuloPrice(selectedProduct))}
               </p>
-            )}
+            ) : null}
             <Button fullWidth size="lg" onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}
               disabled={!inStock(selectedProduct)}>
               {inStock(selectedProduct) ? t("addCart", lang) : t("noStock", lang)}

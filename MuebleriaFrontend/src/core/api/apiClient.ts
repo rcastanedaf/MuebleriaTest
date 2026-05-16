@@ -2,11 +2,25 @@
 // HTTP client — apunta al backend VB.NET + Oracle 21c
 
 export const API_BASE_URL =
-  (process.env.REACT_APP_API_URL as string) ?? "https://localhost:56935/api";
+  (process.env.REACT_APP_API_URL as string)?.replace(/\/$/, "") ?? "/api";
 
 const TOKEN_KEY   = "alpes_token";
 const USER_KEY    = "alpes_user";
 const MODULES_KEY = "alpes_modules";
+
+const toCamel = (key: string) => key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+
+const normalizeResponse = (value: unknown): unknown => {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(normalizeResponse);
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).reduce((acc, [key, val]) => {
+      acc[toCamel(key)] = normalizeResponse(val);
+      return acc;
+    }, {} as Record<string, unknown>);
+  }
+  return value;
+};
 
 export const tokenStorage = {
   get: (): string | null => localStorage.getItem(TOKEN_KEY),
@@ -69,7 +83,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (response.status === 204) return undefined as unknown as T;
   const text = await response.text();
   if (!text.trim()) return undefined as unknown as T;
-  return JSON.parse(text) as T;
+  return normalizeResponse(JSON.parse(text)) as T;
 }
 
 export const apiClient = {

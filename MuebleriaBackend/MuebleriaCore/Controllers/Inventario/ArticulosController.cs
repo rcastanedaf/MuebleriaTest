@@ -83,6 +83,21 @@ public class ArticulosController : BaseController
                 OracleHelper.PDec("p_prof",  dto.ProfundidadArticulo),
                 OracleHelper.POut("p_id_out"),
             ], isStoredProc: true);
+
+            // UPSERT stock inicial via SP_STOCK_UPSERT
+            if (dto.StockDisponible.HasValue)
+                _db.ExecuteNonQuery("SP_STOCK_UPSERT", [
+                    OracleHelper.PInt("p_id_articulo", newId),
+                    OracleHelper.PDec("p_stock", dto.StockDisponible.Value),
+                ], isStoredProc: true);
+
+            // UPSERT precio inicial via SP_PRECIO_UPSERT
+            if (dto.Precio.HasValue)
+                _db.ExecuteNonQuery("SP_PRECIO_UPSERT", [
+                    OracleHelper.PInt("p_id_articulo", newId),
+                    OracleHelper.PDec("p_precio", dto.Precio.Value),
+                ], isStoredProc: true);
+
             return Created($"api/articulos/{newId}", new { idArticulo = newId });
         }
         catch (OracleException ex) { return HandleOracleError(ex); }

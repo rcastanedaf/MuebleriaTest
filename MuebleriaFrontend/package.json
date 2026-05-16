@@ -2,6 +2,7 @@
   "name": "muebles-los-alpes",
   "version": "1.0.0",
   "private": true,
+  "proxy": "http://192.168.1.48:56935",
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

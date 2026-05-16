@@ -20,14 +20,14 @@ export function useCrud<T extends Record<string,any>>(repo: AdminRepo<T>, pkFiel
 
   useEffect(() => { load(); }, [load]);
 
-  const create = useCallback(async (data: Partial<T>): Promise<boolean> => {
+  const create = useCallback(async (data: Partial<T>): Promise<T | null> => {
     setSaving(true); setError(null);
     try {
-      await repo.create(data);
+      const created = await repo.create(data);
       await load();
-      return true;
+      return created;
     }
-    catch(e: any) { setError(e.message ?? "Error al crear"); return false; }
+    catch(e: any) { setError(e.message ?? "Error al crear"); return null; }
     finally { setSaving(false); }
   }, [repo, load]);
 

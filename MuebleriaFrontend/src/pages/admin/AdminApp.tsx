@@ -727,7 +727,7 @@ function ArticulosModule({ showToast }: { showToast: (m: string, t?: "success"|"
 
 function CrudTable<T extends Record<string,any>>({
   repo, pk, title, columns, formFields, fieldLabels, showToast, extraRowAction,
-  extraFormContent, onEditModalClose,
+  extraFormContent, onEditModalClose, onSave,
 }: {
   repo: any; pk: string; title: string; columns: string[];
   formFields?: string[];
@@ -736,6 +736,7 @@ function CrudTable<T extends Record<string,any>>({
   extraRowAction?: (row: T) => React.ReactNode;
   extraFormContent?: (row: T | null) => React.ReactNode;
   onEditModalClose?: () => void;
+  onSave?: (result: T | null, data: Partial<T>, action: "create"|"update") => Promise<void> | void;
 }) {
   const fields = formFields ?? columns;
   const crud = useCrud<T>(repo, pk);
@@ -816,6 +817,19 @@ function CrudTable<T extends Record<string,any>>({
 
   const setField = (k: string, v: string) => setFormData(f => ({ ...f, [k]: v }));
 
+  const toSnakeKey = (key: string) => key.replace(/([A-Z])/g, "_$1").toLowerCase();
+  const getRowValue = (row: T, col: string) => {
+    const direct = row[col] ?? (row as any)[toSnakeKey(col)];
+    if (direct !== undefined) return direct;
+    if (col === "stockDisponible") {
+      return (row as any).cantidadDiponibleStockArticulo ?? (row as any).stock_disponible;
+    }
+    if (col === "precio") {
+      return (row as any).precioListaPreciosDet ?? (row as any).precio_unitario ?? (row as any).precio;
+    }
+    return (row as any)[col];
+  };
+
   // Convert form data to appropriate types before sending to backend
   // Fields shown by name in the table but sent as ID to the backend
   const nameToIdField: Record<string, string> = {
@@ -864,17 +878,29 @@ function CrudTable<T extends Record<string,any>>({
 
   const handleCreate = async () => {
     const convertedData = convertFormData(formData);
-    const ok = await crud.create(convertedData);
-    if (ok) { showToast(`${title} creado`); closeModal(); setFormData({}); }
-    else showToast(crud.error ?? "Error", "error");
+    const created = await crud.create(convertedData);
+    if (created) {
+      await onSave?.(created, convertedData, "create");
+      showToast(`${title} creado`);
+      closeModal();
+      setFormData({});
+    } else {
+      showToast(crud.error ?? "Error", "error");
+    }
   };
 
   const handleUpdate = async () => {
     if (!selected) return;
     const convertedData = convertFormData(formData);
     const ok = await crud.update(selected[pk], convertedData);
-    if (ok) { showToast("Actualizado"); closeModal(); }
-    else showToast(crud.error ?? "Error", "error");
+    if (ok) {
+      const updatedRow = { ...selected, ...convertedData } as T;
+      await onSave?.(updatedRow, convertedData, "update");
+      showToast("Actualizado");
+      closeModal();
+    } else {
+      showToast(crud.error ?? "Error", "error");
+    }
   };
 
   const closeModal = () => { editModal.close(); onEditModalClose?.(); };
@@ -890,7 +916,7 @@ function CrudTable<T extends Record<string,any>>({
   const openEdit   = (row: T) => {
     setSelected(row);
     const fd: Record<string,string> = {};
-    fields.forEach(c => { fd[c] = String(row[c] ?? ""); });
+    fields.forEach(c => { fd[c] = String(getRowValue(row, c) ?? ""); });
     setFormData(fd);
     editModal.open();
   };
@@ -990,7 +1016,7 @@ function CrudTable<T extends Record<string,any>>({
   };
 
   const cellValue = (row: T, col: string) => {
-    const v = row[col];
+    const v = getRowValue(row, col);
     if (col === "tieneFoto") return v ? "📷" : "—";
     if (v === null || v === undefined) return "—";
     if (col.toLowerCase().includes("estado")) return <StatusBadge status={String(v)} />;
